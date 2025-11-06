@@ -1,0 +1,42 @@
+[
+  {
+    "id": 2,
+    "name": "mokaccini silviettini",
+    "type": "🏭 Zona Industriale",
+    "description": "Area industriale massiccia con magazzini, fabbriche e zone di carico. Perfetta per roleplay di crimine",
+    "price": 49.99,
+    "features": [
+      "✓ 80+ strutture",
+      "✓ Dettagli realistici",
+      "✓ Strade carrabili"
+    ],
+    "color": "#f093fb",
+    "imageUrl": ""
+  },
+  {
+    "id": 3,
+    "name": "Paradise Resort",
+    "type": "🏖️ Resort Esclusivo",
+    "description": "Resort di lusso con piscina infinity, villa privata, spiaggia e club esclusivo",
+    "price": 79.99,
+    "features": [
+      "✓ Interni arredati",
+      "✓ Animazioni custom",
+      "✓ Accesso VIP"
+    ],
+    "color": "#4facfe"
+  },
+  {
+    "id": 4,
+    "name": "Port City Harbor",
+    "type": "⚓ Porto Commerciale",
+    "description": "Porto completamente ridisegnato con navi cargo, gru portuali e terminal doganale",
+    "price": 64.99,
+    "features": [
+      "✓ Navi interattive",
+      "✓ Meccaniche porto",
+      "✓ Scripting ready"
+    ],
+    "color": "#fa709a"
+  }
+]

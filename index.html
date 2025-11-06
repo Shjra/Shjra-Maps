@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shjra Maps - Vendita Mappe Professionali</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="gradient-bg"></div>
+
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h1 id="greeting-message">Buongiorno!</h1>
+            <p>Caricamento in corso...</p>
+        </div>
+    </div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Shjra Maps</div>
+            <ul class="nav-menu">
+                <li><button class="nav-btn" id="btn-home" onclick="navigateTo('home')">Home</button></li>
+                <li id="nav-prodotti" style="display: none;"><button class="nav-btn" id="btn-prodotti" onclick="navigateTo('prodotti')">Prodotti</button></li>
+                <li id="nav-chi-siamo" style="display: none;"><button class="nav-btn" id="btn-chi-siamo" onclick="navigateTo('chi-siamo')">Chi Siamo</button></li>
+                <li id="nav-contatti" style="display: none;"><button class="nav-btn" id="btn-contatti" onclick="navigateTo('contatti')">Contatti</button></li>
+                <li id="nav-staff" style="display: none;"><button class="nav-btn" id="btn-staff" onclick="navigateTo('staff')" style="color: #ffd700;">⚙️ Staff</button></li>
+                <li id="login-container" style="display: block;">
+                    <button class="discord-btn" id="discord-login-btn" onclick="discordLogin()">
+                        <span class="discord-icon">⚙️</span> Login Discord
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="content-section active">
+            <!-- Non-logged in view -->
+            <div id="home-not-logged" class="hero">
+                <h1>Mappe FiveM Professionali</h1>
+                <p>Accedi per visualizzare i nostri esclusivi servizi di mappe custom</p>
+                <button class="cta-btn" id="home-login-btn" onclick="discordLogin()">
+                    Accedi con Discord
+                </button>
+            </div>
+
+            <!-- Logged in view -->
+            <div id="home-logged" style="display: none;">
+                <div class="welcome-section">
+                    <h1>Benvenuto in Shjra Maps! 🎮</h1>
+                    <p class="welcome-subtitle">Il tuo partner per mappe FiveM di qualità professionale</p>
+                    
+                    <div class="features-showcase">
+                        <div class="feature-item">
+                            <div class="feature-icon">🏆</div>
+                            <h3>Qualità Professionale</h3>
+                            <p>Mappe sviluppate da esperti con 5+ anni di esperienza nel settore FiveM</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⚡</div>
+                            <h3>Ottimizzate</h3>
+                            <p>Performance massima con texture 4K e dettagli incredibili</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔧</div>
+                            <h3>Supporto 24/7</h3>
+                            <p>Assistenza tecnica completa e aggiornamenti gratuiti per sempre</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎨</div>
+                            <h3>Design Unico</h3>
+                            <p>Mappe custom e personalizzabili per il tuo server</p>
+                        </div>
+                    </div>
+
+                    <div class="cta-section">
+                        <h2>Esplora il nostro catalogo</h2>
+                        <button class="cta-btn" onclick="navigateTo('prodotti')">
+                            Visualizza Prodotti →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Prodotti Section -->
+        <section id="prodotti" class="content-section">
+            <div class="section-header">
+                <h2>Catalogo Mappe FiveM</h2>
+                <p class="section-subtitle">Mappe professionali, ottimizzate e pronte all'uso</p>
+            </div>
+            <p class="locked-message">🔒 Accedi per visualizzare i nostri esclusivi prodotti</p>
+            <div class="products-grid" id="products-grid" style="display: none;">
+                <div class="product-card">
+                    <div class="product-image" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                    <div class="product-content">
+                        <h3>Downtown V2</h3>
+                        <p class="map-type">🏙️ Mappa Città</p>
+                        <p>Rielaborazione completa del centro cittadino con architettura moderna, negozi funzionanti e vita notturna</p>
+                        <ul class="features">
+                            <li>✓ 150+ edifici custom</li>
+                            <li>✓ 4K textures</li>
+                            <li>✓ Ottimizzata per performance</li>
+                        </ul>
+                        <div class="product-footer">
+                            <span class="price">€59.99</span>
+                            <button class="btn-compra" onclick="alert('Acquista ora')">Acquista</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image" style="background: linear-gradient(135deg, #f093fb, #f5576c);"></div>
+                    <div class="product-content">
+                        <h3>Industrial Zone</h3>
+                        <p class="map-type">🏭 Zona Industriale</p>
+                        <p>Area industriale massiccia con magazzini, fabbriche e zone di carico. Perfetta per roleplay di crimine</p>
+                        <ul class="features">
+                            <li>✓ 80+ strutture</li>
+                            <li>✓ Dettagli realistici</li>
+                            <li>✓ Strade carrabili</li>
+                        </ul>
+                        <div class="product-footer">
+                            <span class="price">€49.99</span>
+                            <button class="btn-compra" onclick="alert('Acquista ora')">Acquista</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
+                    <div class="product-content">
+                        <h3>Paradise Resort</h3>
+                        <p class="map-type">🏖️ Resort Esclusivo</p>
+                        <p>Resort di lusso con piscina infinity, villa privata, spiaggia e club esclusivo</p>
+                        <ul class="features">
+                            <li>✓ Interni arredati</li>
+                            <li>✓ Animazioni custom</li>
+                            <li>✓ Accesso VIP</li>
+                        </ul>
+                        <div class="product-footer">
+                            <span class="price">€79.99</span>
+                            <button class="btn-compra" onclick="alert('Acquista ora')">Acquista</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-image" style="background: linear-gradient(135deg, #fa709a, #fee140);"></div>
+                    <div class="product-content">
+                        <h3>Port City Harbor</h3>
+                        <p class="map-type">⚓ Porto Commerciale</p>
+                        <p>Porto completamente ridisegnato con navi cargo, gru portuali e terminal doganale</p>
+                        <ul class="features">
+                            <li>✓ Navi interattive</li>
+                            <li>✓ Meccaniche porto</li>
+                            <li>✓ Scripting ready</li>
+                        </ul>
+                        <div class="product-footer">
+                            <span class="price">€64.99</span>
+                            <button class="btn-compra" onclick="alert('Acquista ora')">Acquista</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chi Siamo Section -->
+        <section id="chi-siamo" class="content-section">
+            <div class="section-header">
+                <h2>Chi Siamo</h2>
+                <p class="section-subtitle">Leader nella creazione di mappe FiveM di qualità</p>
+            </div>
+            <p class="locked-message">🔒 Accedi per scoprire di più su di noi</p>
+            <div class="about-content" id="about-content" style="display: none;">
+                <div class="about-grid">
+                    <div class="about-card">
+                        <h3>🏆 Esperienza</h3>
+                        <p>Oltre 5 anni di esperienza nel design e sviluppo di mappe FiveM di livello professionale</p>
+                    </div>
+                    <div class="about-card">
+                        <h3>👥 Team Qualificato</h3>
+                        <p>Sviluppatori esperti specializzati in mapping, texturing e ottimizzazione di performance</p>
+                    </div>
+                    <div class="about-card">
+                        <h3>⚡ Performance</h3>
+                        <p>Tutte le mappe sono ottimizzate per garantire la massima fluidità nei vostri server</p>
+                    </div>
+                    <div class="about-card">
+                        <h3>🔧 Supporto 24/7</h3>
+                        <p>Assistenza tecnica completa, aggiornamenti e fix gratuite per tutti i prodotti</p>
+                    </div>
+                </div>
+                <div class="about-text">
+                    <p>Shjra Maps è il provider leader nel settore delle mappe custom. Creiamo esperienze immersive e dettagliate per i vostri server FiveM, con un focus sulla qualità, performance e longevità.</p>
+                    <p>Ogni mappa è sviluppata da zero con attenzione ai dettagli, ottimizzazione rigorosa e testing estensivo. Garantiamo che i vostri server abbiano sempre le migliori mappe disponibili sul mercato.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contatti Section -->
+        <section id="contatti" class="content-section">
+            <h2>Contatti</h2>
+            <p class="locked-message">🔒 Accedi per visualizzare i dettagli di contatto</p>
+            <div class="contact-content" id="contact-content" style="display: none;">
+                <p><strong>Discord:</strong> <a href="https://discord.gg/jC7e3Rrs3z" target="_blank" class="discord-link">Entra nel nostro server →</a></p>
+                <p><strong>Email:</strong> seansenatore11048@gmail.com</p>
+                <p><strong>Supporto 24/7:</strong> Sempre disponibili per assistenza</p>
+            </div>
+        </section>
+
+        <!-- Staff Section -->
+        <section id="staff" class="content-section">
+            <div class="section-header">
+                <h2>🔐 Pannello Staff</h2>
+                <p class="section-subtitle">Gestione prodotti e configurazione sito</p>
+            </div>
+            <p class="locked-message" id="staff-locked">🔒 Accesso riservato solo allo staff</p>
+            <div id="staff-content" style="display: none;">
+                <div class="staff-tabs">
+                    <button class="staff-tab active" onclick="switchStaffTab('prodotti')">📦 Gestisci Prodotti</button>
+                    <button class="staff-tab" onclick="switchStaffTab('aggiungi')">➕ Aggiungi Prodotto</button>
+                </div>
+
+                <!-- Tab Prodotti -->
+                <div id="tab-prodotti" class="staff-tab-content">
+                    <h3>Prodotti Attuali</h3>
+                    <div id="staff-products-list" class="staff-products-grid"></div>
+                </div>
+
+                <!-- Tab Aggiungi -->
+                <div id="tab-aggiungi" class="staff-tab-content" style="display: none;">
+                    <h3>Aggiungi Nuovo Prodotto</h3>
+                    <form class="product-form" onsubmit="addProduct(event)">
+                        <div class="form-group">
+                            <label>Nome Prodotto</label>
+                            <input type="text" id="prod-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo Mappa (emoji + testo)</label>
+                            <input type="text" id="prod-type" placeholder="🏙️ Mappa Città" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descrizione</label>
+                            <textarea id="prod-description" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Prezzo (€)</label>
+                            <input type="number" id="prod-price" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>URL Immagine</label>
+                            <input type="url" id="prod-image" placeholder="https://example.com/image.jpg">
+                        </div>
+                        <div class="form-group">
+                            <label>Colore Sfondo (hex) - Usato se no immagine</label>
+                            <input type="text" id="prod-color" placeholder="#667eea" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Features (uno per riga)</label>
+                            <textarea id="prod-features" rows="3" placeholder="✓ 150+ edifici custom&#10;✓ 4K textures" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-save">Aggiungi Prodotto</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+
+    <!-- User Profile -->
+    <div id="user-profile" class="user-profile" style="display: none;">
+        <button class="profile-btn" onclick="toggleProfileModal()">
+            <img id="user-avatar" src="" alt="Avatar" class="avatar-small">
+            <span id="user-name">Utente</span>
+        </button>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="profile-modal" style="display: none;">
+        <div class="profile-modal-content">
+            <div class="profile-banner" id="profile-banner"></div>
+            <div class="profile-info">
+                <img id="profile-avatar" src="" alt="Avatar" class="profile-avatar">
+                <div class="profile-details">
+                    <h2 id="profile-username">Utente</h2>
+                    <p class="profile-id">ID: <span id="profile-id">-</span></p>
+                </div>
+                <button class="logout-btn" onclick="logoutFromProfile()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-modal" class="edit-modal" style="display: none;">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <h3>Modifica Prodotto</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form class="edit-product-form" onsubmit="saveProduct(event)">
+                <div class="form-group">
+                    <label>Nome Prodotto</label>
+                    <input type="text" id="edit-prod-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo Mappa (emoji + testo)</label>
+                    <input type="text" id="edit-prod-type" required>
+                </div>
+                <div class="form-group">
+                    <label>Descrizione</label>
+                    <textarea id="edit-prod-description" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Prezzo (€)</label>
+                    <input type="number" id="edit-prod-price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>URL Immagine</label>
+                    <input type="url" id="edit-prod-image" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="form-group">
+                    <label>Colore Sfondo (hex) - Usato se no immagine</label>
+                    <input type="text" id="edit-prod-color" required>
+                </div>
+                <div class="form-group">
+                    <label>Features (uno per riga)</label>
+                    <textarea id="edit-prod-features" rows="3" required></textarea>
+                </div>
+                <div class="edit-modal-buttons">
+                    <button type="submit" class="btn-save">Salva Modifiche</button>
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Annulla</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
