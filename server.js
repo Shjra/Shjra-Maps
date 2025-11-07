@@ -10,14 +10,29 @@ dotenv.config();
 
 const app = express();
 
+const isProduction = process.env.NODE_ENV === 'production';
+const ORIGIN = isProduction 
+  ? process.env.DISCORD_REDIRECT_URI_PROD.split('/auth')[0]
+  : 'http://localhost:3000';
+
 app.use(express.static(path.join(__dirname)));
-app.use(cors());
+app.use(cors({
+  origin: ORIGIN,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type']
+}));
 app.use(express.json());
 app.use(session({
   secret: 'fivem-maps-secret',
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: true, httpOnly: true, sameSite: 'none' }
+  saveUninitialized: false,
+  cookie: { 
+    secure: isProduction,
+    httpOnly: true, 
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  }
 }));
 
 const PRODUCTS_FILE = path.join(__dirname, 'products.json');
@@ -222,8 +237,14 @@ app.get('/auth/discord/callback', async (req, res) => {
     await axios.post(WEBHOOK_URL, embedPayload);
     console.log('Webhook sent');
 
-    console.log('Redirecting to home with success');
-    res.redirect(`/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}`);
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving session:', err);
+        return res.redirect('/?error=Session save failed');
+      }
+      console.log('Session saved, redirecting to home with success');
+      res.redirect(`/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}`);
+    });
   } catch (error) {
     console.error('Error in callback:', error.response?.data || error.message);
     res.redirect('/?error=Authentication failed');
