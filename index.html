@@ -206,9 +206,24 @@
             <h2>Contatti</h2>
             <p class="locked-message">🔒 Accedi per visualizzare i dettagli di contatto</p>
             <div class="contact-content" id="contact-content" style="display: none;">
-                <p><strong>Discord:</strong> <a href="https://discord.gg/jC7e3Rrs3z" target="_blank" class="discord-link">Entra nel nostro server →</a></p>
-                <p><strong>Email:</strong> seansenatore11048@gmail.com</p>
-                <p><strong>Supporto 24/7:</strong> Sempre disponibili per assistenza</p>
+                <div class="contact-grid">
+                    <div class="contact-item">
+                        <h3>💬 Discord</h3>
+                        <a href="https://discord.gg/jC7e3Rrs3z" target="_blank" class="contact-link">Entra nel nostro server →</a>
+                    </div>
+                    <div class="contact-item">
+                        <h3>📧 Email</h3>
+                        <p>seansenatore11048@gmail.com</p>
+                    </div>
+                    <div class="contact-item">
+                        <h3>💳 PayPal</h3>
+                        <a href="https://www.paypal.com/paypalme/seantoppe00" target="_blank" class="contact-link">Invia una donazione →</a>
+                    </div>
+                    <div class="contact-item">
+                        <h3>🕐 Supporto 24/7</h3>
+                        <p>Sempre disponibili per assistenza e domande</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -270,7 +285,23 @@
         </section>
     </main>
 
-
+    <!-- Product Detail Modal -->
+    <div id="product-modal" class="product-modal" style="display: none;">
+        <div class="product-modal-content">
+            <button class="modal-close" onclick="closeProductModal()">&times;</button>
+            <div class="product-modal-image" id="modal-product-image"></div>
+            <div class="product-modal-details">
+                <h2 id="modal-product-name"></h2>
+                <p class="modal-map-type" id="modal-product-type"></p>
+                <p class="modal-description" id="modal-product-description"></p>
+                <div class="modal-features" id="modal-product-features"></div>
+                <div class="modal-footer">
+                    <span class="modal-price" id="modal-product-price"></span>
+                    <button class="btn-compra" onclick="window.open('https://discord.gg/jC7e3Rrs3z', '_blank')">Acquista Ora</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- User Profile -->
     <div id="user-profile" class="user-profile" style="display: none;">

@@ -305,6 +305,8 @@ function renderProducts() {
         
         const card = document.createElement('div');
         card.className = 'product-card';
+        card.style.cursor = 'pointer';
+        card.onclick = () => openProductModal(product);
         card.innerHTML = `
             <div class="product-image" style="${imageStyle}"></div>
             <div class="product-content">
@@ -316,12 +318,42 @@ function renderProducts() {
                 </ul>
                 <div class="product-footer">
                     <span class="price">€${parseFloat(product.price).toFixed(2)}</span>
-                    <button class="btn-compra" onclick="window.open('https://discord.gg/jC7e3Rrs3z', '_blank')">Acquista</button>
+                    <button class="btn-compra" onclick="event.stopPropagation(); window.open('https://discord.gg/jC7e3Rrs3z', '_blank')">Acquista</button>
                 </div>
             </div>
         `;
         productsGrid.appendChild(card);
     });
+}
+
+function openProductModal(product) {
+    const features = typeof product.features === 'string' 
+        ? product.features.split('\n').filter(f => f.trim())
+        : (Array.isArray(product.features) ? product.features : []);
+    
+    const imageStyle = product.imageUrl 
+        ? `background-image: url('${product.imageUrl}');`
+        : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)});`;
+    
+    document.getElementById('modal-product-image').style.cssText = imageStyle;
+    document.getElementById('modal-product-name').textContent = product.name;
+    document.getElementById('modal-product-type').textContent = product.type;
+    document.getElementById('modal-product-description').textContent = product.description;
+    document.getElementById('modal-product-price').textContent = `€${parseFloat(product.price).toFixed(2)}`;
+    
+    const featuresContainer = document.getElementById('modal-product-features');
+    featuresContainer.innerHTML = `
+        <ul>
+            ${features.map(f => `<li>${f}</li>`).join('')}
+        </ul>
+    `;
+    
+    document.getElementById('product-modal').classList.add('show');
+}
+
+function closeProductModal() {
+    const modal = document.getElementById('product-modal');
+    modal.classList.remove('show');
 }
 
 window.addEventListener('load', async function() {
@@ -616,5 +648,10 @@ window.addEventListener('click', function(event) {
     const editModal = document.getElementById('edit-modal');
     if (event.target === editModal) {
         closeEditModal();
+    }
+    
+    const productModal = document.getElementById('product-modal');
+    if (event.target === productModal) {
+        closeProductModal();
     }
 });
