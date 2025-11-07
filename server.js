@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const session = require('express-session');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 
@@ -15,26 +15,34 @@ const ORIGIN = isProduction
   ? process.env.DISCORD_REDIRECT_URI_PROD.split('/auth')[0]
   : 'http://localhost:3000';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'fivem-maps-jwt-secret-key-change-in-production';
+
 app.use(express.static(path.join(__dirname)));
 app.use(cors({
   origin: ORIGIN,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
-app.use(session({
-  secret: 'fivem-maps-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: isProduction,
-    httpOnly: true, 
-    sameSite: isProduction ? 'none' : 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000
+
+function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.json({ success: false, user: null });
   }
-}));
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return res.json({ success: false, user: null });
+  }
+}
 
 const PRODUCTS_FILE = path.join(__dirname, 'products.json');
 
@@ -92,7 +100,7 @@ async function logProductAction(action, product, user) {
         fields: [
           {
             name: '👤 Utente',
-            value: `${user.username}#${user.discriminator}`,
+            value: user.discriminator ? `${user.username}#${user.discriminator}` : user.username,
             inline: true
           },
           {
@@ -188,18 +196,18 @@ app.get('/auth/discord/callback', async (req, res) => {
       bannerUrl = user.banner_color;
     }
 
-    req.session.user = {
+    const userData = {
       id: userId,
       username: userName,
       discriminator: userDiscriminator,
       avatar: avatarUrl,
-      banner: bannerUrl,
-      accessToken: accessToken
+      banner: bannerUrl
     };
 
-    console.log('Session set for user:', req.session.user.id);
-    console.log('Session ID:', req.sessionID);
-    console.log('Session user:', req.session.user);
+    const token = jwt.sign(userData, JWT_SECRET, { expiresIn: '7d' });
+
+    console.log('JWT token generated for user:', userId);
+    console.log('Token:', token);
 
     const now = new Date();
     const formattedDate = now.toLocaleString('it-IT', {
@@ -239,29 +247,29 @@ app.get('/auth/discord/callback', async (req, res) => {
 
     axios.post(WEBHOOK_URL, embedPayload).then(() => {
       console.log('Webhook sent');
-
-      req.session.save((err) => {
-        if (err) {
-          console.error('Error saving session:', err);
-          return res.redirect('/?error=Session save failed');
-        }
-        console.log('Session saved, sending HTML redirect');
-        console.log('Setting cookie:', res.getHeaders()['set-cookie']);
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Redirecting...</title>
-          </head>
-          <body>
-            <script>
-              window.location.href = '/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}';
-            </script>
-          </body>
-          </html>
-        `);
-      });
+      
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Redirecting...</title>
+        </head>
+        <body>
+          <script>
+            localStorage.setItem('token', '${token}');
+            localStorage.setItem('user', JSON.stringify({
+              id: '${userId}',
+              username: '${userName}',
+              discriminator: '${userDiscriminator}',
+              avatar: '${avatarUrl}',
+              banner: '${bannerUrl}'
+            }));
+            window.location.href = '/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}';
+          </script>
+        </body>
+        </html>
+      `);
     }).catch((error) => {
       console.error('Error posting webhook:', error);
       res.redirect('/?error=Webhook failed');
@@ -273,29 +281,31 @@ app.get('/auth/discord/callback', async (req, res) => {
 });
 
 app.get('/api/user', (req, res) => {
-  console.log('Checking user session:', req.session.user ? 'exists' : 'null');
-  console.log('Session ID received:', req.sessionID);
-  console.log('Cookies received:', req.headers.cookie);
-  if (req.session.user) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    console.log('No token provided');
+    return res.json({ success: false, user: null });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Token verified for user:', decoded.id);
     res.json({
       success: true,
       user: {
-        id: req.session.user.id,
-        username: req.session.user.username,
-        discriminator: req.session.user.discriminator,
-        avatar: req.session.user.avatar,
-        banner: req.session.user.banner
+        id: decoded.id,
+        username: decoded.username,
+        discriminator: decoded.discriminator,
+        avatar: decoded.avatar,
+        banner: decoded.banner
       }
     });
-  } else {
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
     res.json({ success: false, user: null });
   }
-});
-
-app.post('/api/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.json({ success: true });
-  });
 });
 
 app.get('/api/products', (req, res) => {
@@ -303,11 +313,28 @@ app.get('/api/products', (req, res) => {
   res.json({ success: true, products });
 });
 
-app.post('/api/products', async (req, res) => {
-  if (!req.session.user || req.session.user.id !== ADMIN_ID) {
-    return res.status(403).json({ success: false, error: 'Unauthorized' });
+function checkAdmin(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'No token provided' });
   }
 
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.id !== ADMIN_ID) {
+      return res.status(403).json({ success: false, error: 'Admin only' });
+    }
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return res.status(401).json({ success: false, error: 'Invalid token' });
+  }
+}
+
+app.post('/api/products', checkAdmin, async (req, res) => {
   const products = loadProducts();
   const newProduct = {
     id: Date.now(),
@@ -318,16 +345,12 @@ app.post('/api/products', async (req, res) => {
   products.push(newProduct);
   saveProducts(products);
   
-  await logProductAction('add', newProduct, req.session.user);
+  await logProductAction('add', newProduct, req.user);
   
   res.json({ success: true, product: newProduct });
 });
 
-app.put('/api/products/:id', async (req, res) => {
-  if (!req.session.user || req.session.user.id !== ADMIN_ID) {
-    return res.status(403).json({ success: false, error: 'Unauthorized' });
-  }
-
+app.put('/api/products/:id', checkAdmin, async (req, res) => {
   let products = loadProducts();
   const index = products.findIndex(p => p.id === parseInt(req.params.id));
   
@@ -338,23 +361,19 @@ app.put('/api/products/:id', async (req, res) => {
   products[index] = { ...products[index], ...req.body };
   saveProducts(products);
   
-  await logProductAction('edit', products[index], req.session.user);
+  await logProductAction('edit', products[index], req.user);
   
   res.json({ success: true, product: products[index] });
 });
 
-app.delete('/api/products/:id', async (req, res) => {
-  if (!req.session.user || req.session.user.id !== ADMIN_ID) {
-    return res.status(403).json({ success: false, error: 'Unauthorized' });
-  }
-
+app.delete('/api/products/:id', checkAdmin, async (req, res) => {
   let products = loadProducts();
   const deletedProduct = products.find(p => p.id === parseInt(req.params.id));
   products = products.filter(p => p.id !== parseInt(req.params.id));
   saveProducts(products);
   
   if (deletedProduct) {
-    await logProductAction('delete', deletedProduct, req.session.user);
+    await logProductAction('delete', deletedProduct, req.user);
   }
   
   res.json({ success: true });

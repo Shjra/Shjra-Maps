@@ -1,9 +1,19 @@
 let isLoggedIn = false;
 let currentUser = null;
+let token = null;
 
 const ADMIN_ID = '1100354997738274858';
 let products = [];
 let editingProductId = null;
+
+function getAuthHeaders() {
+  return token ? {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  } : {
+    'Content-Type': 'application/json'
+  };
+}
 
 function getGreeting() {
     const hour = new Date().getHours();
@@ -65,12 +75,12 @@ function toggleProfileModal() {
 }
 
 function logout() {
-    fetch('/api/logout', { method: 'POST' })
-        .then(() => {
-            isLoggedIn = false;
-            currentUser = null;
-            updateUIAfterLogout();
-        });
+    token = null;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    isLoggedIn = false;
+    currentUser = null;
+    updateUIAfterLogout();
 }
 
 function logoutFromProfile() {
@@ -218,8 +228,9 @@ function navigateTo(section) {
 
 async function loadProductsFromAPI() {
     try {
+        const headers = getAuthHeaders();
         const response = await fetch('/api/products', {
-            credentials: 'include'
+            headers: headers
         });
         const data = await response.json();
         if (data.success && data.products) {
@@ -274,6 +285,15 @@ window.addEventListener('load', async function() {
     updateBackgroundTheme();
     setInterval(updateBackgroundTheme, 60000);
     
+    token = localStorage.getItem('token');
+    if (localStorage.getItem('user')) {
+        try {
+            currentUser = JSON.parse(localStorage.getItem('user'));
+        } catch (e) {
+            currentUser = null;
+        }
+    }
+    
     const params = new URLSearchParams(window.location.search);
     
     if (params.has('login_success') && params.get('login_success') === 'true') {
@@ -284,8 +304,9 @@ window.addEventListener('load', async function() {
         showLoadingScreen();
         
         setTimeout(async () => {
+            const headers = getAuthHeaders();
             const response = await fetch('/api/user', {
-                credentials: 'include'
+                headers: headers
             });
             const data = await response.json();
             
@@ -301,16 +322,25 @@ window.addEventListener('load', async function() {
     }
 
     try {
-        const response = await fetch('/api/user', {
-            credentials: 'include'
-        });
-        const data = await response.json();
-        
-        if (data.success && data.user) {
-            isLoggedIn = true;
-            currentUser = data.user;
-            updateUIAfterLogin();
-            await loadProductsFromAPI();
+        if (token) {
+            const headers = getAuthHeaders();
+            const response = await fetch('/api/user', {
+                headers: headers
+            });
+            const data = await response.json();
+            
+            if (data.success && data.user) {
+                isLoggedIn = true;
+                currentUser = data.user;
+                updateUIAfterLogin();
+                await loadProductsFromAPI();
+            } else {
+                token = null;
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                updateUIAfterLogout();
+                await loadProductsFromAPI();
+            }
         } else {
             updateUIAfterLogout();
             await loadProductsFromAPI();
@@ -383,8 +413,7 @@ async function addProduct(event) {
     try {
         const response = await fetch('/api/products', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 name,
                 type,
@@ -455,8 +484,7 @@ async function saveProduct(event) {
     try {
         const response = await fetch(`/api/products/${editingProductId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 name,
                 type,
@@ -489,7 +517,7 @@ async function deleteProduct(productId) {
     try {
         const response = await fetch(`/api/products/${productId}`, {
             method: 'DELETE',
-            credentials: 'include'
+            headers: getAuthHeaders()
         });
         
         const data = await response.json();
