@@ -5,6 +5,8 @@ let token = null;
 const ADMIN_ID = '1100354997738274858';
 let products = [];
 let editingProductId = null;
+let productsSyncInterval = null;
+let lastProductsHash = null;
 
 function getAuthHeaders() {
   return token ? {
@@ -80,6 +82,7 @@ function logout() {
     localStorage.removeItem('user');
     isLoggedIn = false;
     currentUser = null;
+    stopProductsSync();
     updateUIAfterLogout();
 }
 
@@ -92,6 +95,7 @@ function updateUIAfterLogin() {
     updateNavButtons();
     updateContentSections();
     updateUserProfile();
+    startProductsSync();
 }
 
 function updateUIAfterLogout() {
@@ -226,6 +230,10 @@ function navigateTo(section) {
     });
 }
 
+function generateProductsHash(productsList) {
+    return JSON.stringify(productsList).length + productsList.length;
+}
+
 async function loadProductsFromAPI() {
     try {
         const headers = getAuthHeaders();
@@ -235,6 +243,7 @@ async function loadProductsFromAPI() {
         const data = await response.json();
         if (data.success && data.products) {
             products = data.products;
+            lastProductsHash = generateProductsHash(products);
             renderProducts();
             if (isStaff()) {
                 loadStaffProducts();
@@ -242,6 +251,40 @@ async function loadProductsFromAPI() {
         }
     } catch (error) {
         console.error('Error loading products:', error);
+    }
+}
+
+function startProductsSync() {
+    if (productsSyncInterval) clearInterval(productsSyncInterval);
+    
+    productsSyncInterval = setInterval(async () => {
+        try {
+            const headers = getAuthHeaders();
+            const response = await fetch('/api/products', {
+                headers: headers
+            });
+            const data = await response.json();
+            if (data.success && data.products) {
+                const newHash = generateProductsHash(data.products);
+                if (newHash !== lastProductsHash) {
+                    products = data.products;
+                    lastProductsHash = newHash;
+                    renderProducts();
+                    if (isStaff()) {
+                        loadStaffProducts();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error syncing products:', error);
+        }
+    }, 3000);
+}
+
+function stopProductsSync() {
+    if (productsSyncInterval) {
+        clearInterval(productsSyncInterval);
+        productsSyncInterval = null;
     }
 }
 
