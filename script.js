@@ -2,11 +2,15 @@ let isLoggedIn = false;
 let currentUser = null;
 let token = null;
 
+const audioContext = typeof AudioContext !== 'undefined' ? new AudioContext() : 
+                     typeof webkitAudioContext !== 'undefined' ? new webkitAudioContext() : null;
+
 const ADMIN_ID = '1100354997738274858';
 let products = [];
 let editingProductId = null;
 let productsSyncInterval = null;
 let lastProductsHash = null;
+let currentProduct = null;
 
 function getAuthHeaders() {
   return token ? {
@@ -15,6 +19,67 @@ function getAuthHeaders() {
   } : {
     'Content-Type': 'application/json'
   };
+}
+
+function playSound(type) {
+  if (!audioContext) return;
+  
+  const now = audioContext.currentTime;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+  gain.gain.setValueAtTime(0.3, now);
+  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+  
+  if (type === 'click') {
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === 'copy') {
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } else if (type === 'login') {
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+    osc.start(now);
+    osc.stop(now + 0.5);
+  } else if (type === 'success') {
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.frequency.setValueAtTime(1000, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } else if (type === 'error') {
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  }
+}
+
+function copyEmail() {
+  const email = 'seansenatore11048@gmail.com';
+  navigator.clipboard.writeText(email).then(() => {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '✓ Copiato!';
+    button.style.background = 'linear-gradient(135deg, rgba(0, 255, 0, 0.4), rgba(0, 200, 0, 0.3))';
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.style.background = '';
+    }, 2000);
+  });
 }
 
 function getGreeting() {
@@ -67,16 +132,19 @@ function hideLoadingScreen() {
 }
 
 function discordLogin() {
+    playSound('click');
     window.location.href = '/auth/discord';
 }
 
 function toggleProfileModal() {
+    playSound('click');
     const modal = document.getElementById('profile-modal');
     const isVisible = modal.style.display === 'block';
     modal.style.display = isVisible ? 'none' : 'block';
 }
 
 function logout() {
+    playSound('click');
     token = null;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -96,6 +164,7 @@ function updateUIAfterLogin() {
     updateContentSections();
     updateUserProfile();
     startProductsSync();
+    playSound('login');
 }
 
 function updateUIAfterLogout() {
@@ -199,6 +268,8 @@ function updateUserProfile() {
 }
 
 function navigateTo(section) {
+    playSound('click');
+    
     if (!isLoggedIn && section !== 'home') {
         alert('Effettua il login con Discord per accedere a questa sezione');
         return;
@@ -327,6 +398,9 @@ function renderProducts() {
 }
 
 function openProductModal(product) {
+    playSound('click');
+    currentProduct = product;
+    
     const features = typeof product.features === 'string' 
         ? product.features.split('\n').filter(f => f.trim())
         : (Array.isArray(product.features) ? product.features : []);
@@ -352,8 +426,51 @@ function openProductModal(product) {
 }
 
 function closeProductModal() {
+    playSound('click');
     const modal = document.getElementById('product-modal');
     modal.classList.remove('show');
+}
+
+function showPurchaseOptions() {
+    playSound('click');
+    const modal = document.getElementById('purchase-modal');
+    modal.classList.add('show');
+}
+
+function closePurchaseModal() {
+    playSound('click');
+    const modal = document.getElementById('purchase-modal');
+    modal.classList.remove('show');
+}
+
+function purchaseViaDiscord() {
+    playSound('success');
+    window.open('https://discord.gg/jC7e3Rrs3z', '_blank');
+    setTimeout(() => {
+        closePurchaseModal();
+    }, 500);
+}
+
+function purchaseViaPayPal() {
+    playSound('success');
+    
+    if (!currentProduct || !currentUser) {
+        alert('Errore: Prodotto o utente non trovato');
+        return;
+    }
+    
+    const productName = currentProduct.name;
+    const productPrice = parseFloat(currentProduct.price).toFixed(2);
+    const discordId = currentUser.id;
+    const discordUsername = currentUser.username;
+    
+    const description = `Acquisto: ${productName} - ID Discord: ${discordId} (${discordUsername})`;
+    const paypalLink = `https://www.paypal.com/paypalme/seantoppe00/${productPrice}?message=${encodeURIComponent(description)}`;
+    
+    window.open(paypalLink, '_blank');
+    setTimeout(() => {
+        closePurchaseModal();
+    }, 500);
 }
 
 window.addEventListener('load', async function() {
@@ -522,10 +639,12 @@ async function addProduct(event) {
         const data = await response.json();
         
         if (data.success) {
+            playSound('success');
             event.target.reset();
             await loadProductsFromAPI();
             alert('✅ Prodotto aggiunto con successo!');
         } else {
+            playSound('error');
             alert('❌ Errore: ' + data.error);
         }
     } catch (error) {
@@ -556,6 +675,7 @@ function editProduct(productId) {
 }
 
 function closeEditModal() {
+    playSound('click');
     document.getElementById('edit-modal').style.display = 'none';
     editingProductId = null;
 }
@@ -593,10 +713,12 @@ async function saveProduct(event) {
         const data = await response.json();
         
         if (data.success) {
+            playSound('success');
             closeEditModal();
             await loadProductsFromAPI();
             alert('✅ Prodotto modificato con successo!');
         } else {
+            playSound('error');
             alert('❌ Errore: ' + data.error);
         }
     } catch (error) {
@@ -617,9 +739,11 @@ async function deleteProduct(productId) {
         const data = await response.json();
         
         if (data.success) {
+            playSound('success');
             await loadProductsFromAPI();
             alert('✅ Prodotto eliminato!');
         } else {
+            playSound('error');
             alert('❌ Errore: ' + data.error);
         }
     } catch (error) {
@@ -653,5 +777,10 @@ window.addEventListener('click', function(event) {
     const productModal = document.getElementById('product-modal');
     if (event.target === productModal) {
         closeProductModal();
+    }
+    
+    const purchaseModal = document.getElementById('purchase-modal');
+    if (event.target === purchaseModal) {
+        closePurchaseModal();
     }
 });

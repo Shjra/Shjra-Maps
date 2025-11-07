@@ -203,25 +203,36 @@
 
         <!-- Contatti Section -->
         <section id="contatti" class="content-section">
-            <h2>Contatti</h2>
+            <div class="section-header">
+                <h2>Contatti</h2>
+                <p class="section-subtitle">Rimani in contatto con noi</p>
+            </div>
             <p class="locked-message">🔒 Accedi per visualizzare i dettagli di contatto</p>
             <div class="contact-content" id="contact-content" style="display: none;">
                 <div class="contact-grid">
-                    <div class="contact-item">
-                        <h3>💬 Discord</h3>
-                        <a href="https://discord.gg/jC7e3Rrs3z" target="_blank" class="contact-link">Entra nel nostro server →</a>
+                    <div class="contact-item contact-discord">
+                        <div class="contact-icon">💬</div>
+                        <h3>Discord</h3>
+                        <p>Unisciti alla nostra community</p>
+                        <a href="https://discord.gg/jC7e3Rrs3z" target="_blank" class="contact-link" onclick="playSound('click')">Accedi al server →</a>
                     </div>
-                    <div class="contact-item">
-                        <h3>📧 Email</h3>
-                        <p>seansenatore11048@gmail.com</p>
+                    <div class="contact-item contact-email">
+                        <div class="contact-icon">📧</div>
+                        <h3>Email</h3>
+                        <p>Contattaci direttamente</p>
+                        <button class="contact-link" onclick="copyEmail(); playSound('copy')">seansenatore11048@gmail.com</button>
                     </div>
-                    <div class="contact-item">
-                        <h3>💳 PayPal</h3>
-                        <a href="https://www.paypal.com/paypalme/seantoppe00" target="_blank" class="contact-link">Invia una donazione →</a>
+                    <div class="contact-item contact-paypal">
+                        <div class="contact-icon">💳</div>
+                        <h3>PayPal</h3>
+                        <p>Supporta il nostro lavoro</p>
+                        <a href="https://www.paypal.com/paypalme/seantoppe00" target="_blank" class="contact-link" onclick="playSound('click')">Invia una donazione →</a>
                     </div>
-                    <div class="contact-item">
-                        <h3>🕐 Supporto 24/7</h3>
-                        <p>Sempre disponibili per assistenza e domande</p>
+                    <div class="contact-item contact-support">
+                        <div class="contact-icon">🕐</div>
+                        <h3>Supporto 24/7</h3>
+                        <p>Sempre disponibili per te</p>
+                        <span class="support-badge">Online</span>
                     </div>
                 </div>
             </div>
@@ -297,8 +308,37 @@
                 <div class="modal-features" id="modal-product-features"></div>
                 <div class="modal-footer">
                     <span class="modal-price" id="modal-product-price"></span>
-                    <button class="btn-compra" onclick="window.open('https://discord.gg/jC7e3Rrs3z', '_blank')">Acquista Ora</button>
+                    <button class="btn-compra" id="modal-purchase-btn" onclick="showPurchaseOptions()">Acquista Ora</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Options Modal -->
+    <div id="purchase-modal" class="purchase-modal" style="display: none;">
+        <div class="purchase-modal-content">
+            <button class="modal-close" onclick="closePurchaseModal()">&times;</button>
+            <h2>Scegli il metodo di pagamento</h2>
+            <p class="purchase-subtitle">Seleziona come vuoi completare l'acquisto</p>
+            
+            <div class="purchase-options">
+                <div class="purchase-option discord-option" onclick="purchaseViaDiscord()">
+                    <div class="option-icon">💬</div>
+                    <h3>Discord Ticket</h3>
+                    <p>Apri un ticket sul nostro server e completa l'acquisto</p>
+                    <span class="option-action">Apri Discord →</span>
+                </div>
+                
+                <div class="purchase-option paypal-option" onclick="purchaseViaPayPal()">
+                    <div class="option-icon">💳</div>
+                    <h3>PayPal</h3>
+                    <p>Paga direttamente con PayPal (usa "Amici e Familiari")</p>
+                    <span class="option-action">Vai a PayPal →</span>
+                </div>
+            </div>
+            
+            <div class="paypal-info" style="margin-top: 1.5rem; padding: 1rem; background: rgba(255, 193, 7, 0.1); border-radius: 10px; border-left: 3px solid #ffc107;">
+                <p style="font-size: 0.9rem; color: #ffc107; margin: 0;"><strong>💡 Nota PayPal:</strong> Utilizza l'opzione "Amici e Familiari" e inserisci il tuo ID Discord nella descrizione del pagamento.</p>
             </div>
         </div>
     </div>
