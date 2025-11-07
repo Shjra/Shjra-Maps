@@ -24,113 +24,71 @@ function getAuthHeaders() {
 function playSound(type) {
   if (!audioContext) return;
   
-  const now = audioContext.currentTime;
-  
-  if (type === 'click') {
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    osc.type = 'sine';
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
+  try {
+    const now = audioContext.currentTime;
     
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-    
-    osc.frequency.setValueAtTime(520, now);
-    osc.frequency.exponentialRampToValueAtTime(450, now + 0.08);
-    
-    osc.start(now);
-    osc.stop(now + 0.08);
-  } 
-  else if (type === 'copy') {
-    const osc1 = audioContext.createOscillator();
-    const osc2 = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    
-    osc1.type = 'sine';
-    osc2.type = 'sine';
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(audioContext.destination);
-    
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-    
-    osc1.frequency.setValueAtTime(740, now);
-    osc2.frequency.setValueAtTime(590, now);
-    
-    osc1.start(now);
-    osc2.start(now);
-    osc1.stop(now + 0.2);
-    osc2.stop(now + 0.2);
-  } 
-  else if (type === 'login') {
-    const notes = [
-      { freq: 523.25, time: 0, duration: 0.15 },
-      { freq: 659.25, time: 0.1, duration: 0.15 },
-      { freq: 783.99, time: 0.2, duration: 0.25 }
-    ];
-    
-    notes.forEach(note => {
+    if (type === 'click') {
       const osc = audioContext.createOscillator();
       const gain = audioContext.createGain();
-      
       osc.type = 'sine';
       osc.connect(gain);
       gain.connect(audioContext.destination);
-      
-      gain.gain.setValueAtTime(0.15, now + note.time);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + note.time + note.duration);
-      
-      osc.frequency.setValueAtTime(note.freq, now + note.time);
-      
-      osc.start(now + note.time);
-      osc.stop(now + note.time + note.duration);
-    });
-  } 
-  else if (type === 'success') {
-    const osc1 = audioContext.createOscillator();
-    const osc2 = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    
-    osc1.type = 'sine';
-    osc2.type = 'sine';
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(audioContext.destination);
-    
-    gain.gain.setValueAtTime(0.13, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-    
-    osc1.frequency.setValueAtTime(987.77, now);
-    osc2.frequency.setValueAtTime(740, now);
-    
-    osc1.start(now);
-    osc2.start(now);
-    osc1.stop(now + 0.25);
-    osc2.stop(now + 0.25);
-  } 
-  else if (type === 'error') {
-    const osc1 = audioContext.createOscillator();
-    const osc2 = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    
-    osc1.type = 'sine';
-    osc2.type = 'sine';
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(audioContext.destination);
-    
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
-    
-    osc1.frequency.setValueAtTime(349.23, now);
-    osc2.frequency.setValueAtTime(261.63, now);
-    
-    osc1.start(now);
-    osc2.start(now);
-    osc1.stop(now + 0.18);
-    osc2.stop(now + 0.18);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.frequency.setValueAtTime(500, now);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } 
+    else if (type === 'copy') {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.frequency.setValueAtTime(650, now);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } 
+    else if (type === 'login') {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.frequency.setValueAtTime(750, now);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } 
+    else if (type === 'success') {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+      osc.frequency.setValueAtTime(800, now);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    } 
+    else if (type === 'error') {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.frequency.setValueAtTime(300, now);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    }
+  } catch (e) {
+    console.error('Sound error:', e);
   }
 }
 

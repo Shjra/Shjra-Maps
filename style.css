@@ -1296,7 +1296,7 @@ button {
 }
 
 .purchase-modal.show {
-    display: flex;
+    display: flex !important;
 }
 
 .purchase-modal-content {
@@ -2114,7 +2114,7 @@ button {
 }
 
 .edit-modal.show {
-    display: flex;
+    display: flex !important;
 }
 
 .edit-modal-content {
@@ -2276,7 +2276,7 @@ button {
 }
 
 .product-modal.show {
-    display: flex;
+    display: flex !important;
 }
 
 .product-modal-content {
