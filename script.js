@@ -507,15 +507,6 @@ function purchaseViaPayPal() {
 }
 
 window.addEventListener('load', async function() {
-    const logoContainer = document.getElementById('logo-container');
-    if (logoContainer) {
-        logoContainer.style.backgroundImage = `url('shjra-logo.png')`;
-        logoContainer.style.backgroundPosition = 'left center';
-        logoContainer.style.backgroundRepeat = 'no-repeat';
-        logoContainer.style.backgroundSize = '40px 40px';
-        logoContainer.style.paddingLeft = '50px';
-    }
-    
     updateBackgroundTheme();
     setInterval(updateBackgroundTheme, 60000);
     

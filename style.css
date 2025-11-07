@@ -150,17 +150,20 @@ button {
     display: flex;
     align-items: center;
     gap: 0.8rem;
+    cursor: pointer;
+}
+
+.logo span {
     font-size: 1.8rem;
     font-weight: bold;
     background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    cursor: pointer;
 }
 
 .logo-img {
-    height: 40px;
+    height: 50px;
     width: auto;
     filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.4));
 }
