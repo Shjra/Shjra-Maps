@@ -207,7 +207,7 @@ app.get('/auth/discord/callback', async (req, res) => {
     const token = jwt.sign(userData, JWT_SECRET, { expiresIn: '7d' });
 
     console.log('JWT token generated for user:', userId);
-    console.log('Token:', token);
+    console.log('Token length:', token.length);
 
     const now = new Date();
     const formattedDate = now.toLocaleString('it-IT', {

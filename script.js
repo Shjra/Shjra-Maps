@@ -304,20 +304,39 @@ window.addEventListener('load', async function() {
         showLoadingScreen();
         
         setTimeout(async () => {
+            token = localStorage.getItem('token');
+            if (localStorage.getItem('user')) {
+                try {
+                    currentUser = JSON.parse(localStorage.getItem('user'));
+                } catch (e) {
+                    currentUser = null;
+                }
+            }
+            
             const headers = getAuthHeaders();
+            console.log('Token from localStorage:', token ? 'present' : 'missing');
+            console.log('Headers:', headers);
+            
             const response = await fetch('/api/user', {
                 headers: headers
             });
             const data = await response.json();
+            
+            console.log('API response:', data);
             
             if (data.success && data.user) {
                 isLoggedIn = true;
                 currentUser = data.user;
                 updateUIAfterLogin();
                 await loadProductsFromAPI();
+            } else {
+                console.error('Login failed:', data);
+                token = null;
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
             }
             hideLoadingScreen();
-        }, 1500);
+        }, 500);
         return;
     }
 
