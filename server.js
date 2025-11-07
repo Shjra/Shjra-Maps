@@ -17,7 +17,7 @@ app.use(session({
   secret: 'fivem-maps-secret',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false }
+  cookie: { secure: true, httpOnly: true, sameSite: 'lax' }
 }));
 
 const PRODUCTS_FILE = path.join(__dirname, 'products.json');
@@ -114,7 +114,7 @@ async function logProductAction(action, product, user) {
 }
 
 app.get('/auth/discord', (req, res) => {
-  const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify%20email`;
+  const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify+email`;
   res.redirect(discordAuthUrl);
 });
 
