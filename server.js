@@ -43,7 +43,7 @@ function saveProducts(productsData) {
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://shjra-maps.onrender.com/auth/discord/callback';
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PRODUCTS_WEBHOOK_URL = process.env.PRODUCTS_WEBHOOK_URL;
 const ADMIN_ID = '1100354997738274858';
