@@ -147,13 +147,22 @@ button {
 }
 
 .logo {
-    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
     font-size: 1.8rem;
     font-weight: bold;
     background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    cursor: pointer;
+}
+
+.logo-img {
+    height: 40px;
+    width: auto;
+    filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.4));
 }
 
 .nav-menu {

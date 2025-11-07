@@ -397,7 +397,7 @@ function renderProducts() {
         
         const imageStyle = product.imageUrl 
             ? `background-image: url('${product.imageUrl}'); background-size: cover; background-position: center;`
-            : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)});`;
+            : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)}); background-image: url('Logo with the text \\'.png'); background-blend-mode: overlay; background-position: center; background-repeat: no-repeat; background-size: 60%;`;
         
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -432,7 +432,7 @@ function openProductModal(product) {
     
     const imageStyle = product.imageUrl 
         ? `background-image: url('${product.imageUrl}');`
-        : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)});`;
+        : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)}); background-image: url('Logo with the text \\'.png'); background-blend-mode: overlay; background-position: center; background-repeat: no-repeat; background-size: 60%;`;
     
     document.getElementById('modal-product-image').style.cssText = imageStyle;
     document.getElementById('modal-product-name').textContent = product.name;
