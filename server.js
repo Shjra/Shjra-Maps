@@ -5,6 +5,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
+const { MongoClient, ObjectId } = require('mongodb');
 
 dotenv.config();
 
@@ -44,22 +45,45 @@ function verifyToken(req, res, next) {
   }
 }
 
-const PRODUCTS_FILE = path.join(__dirname, 'products.json');
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/shjra-maps';
+let db = null;
 
-function loadProducts() {
+async function connectDB() {
   try {
-    if (fs.existsSync(PRODUCTS_FILE)) {
-      return JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf8'));
-    }
+    const client = new MongoClient(MONGODB_URI);
+    
+    await client.connect();
+    db = client.db('shjra-maps');
+    
+    const productsCollection = db.collection('products');
+    await productsCollection.createIndex({ id: 1 });
+    
+    console.log('MongoDB connected successfully');
   } catch (error) {
-    console.error('Error loading products:', error);
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
   }
-  return [];
 }
 
-function saveProducts(productsData) {
+async function loadProducts() {
   try {
-    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(productsData, null, 2));
+    if (!db) return [];
+    const productsCollection = db.collection('products');
+    return await productsCollection.find({}).toArray();
+  } catch (error) {
+    console.error('Error loading products:', error);
+    return [];
+  }
+}
+
+async function saveProducts(productsData) {
+  try {
+    if (!db) return;
+    const productsCollection = db.collection('products');
+    await productsCollection.deleteMany({});
+    if (productsData.length > 0) {
+      await productsCollection.insertMany(productsData);
+    }
   } catch (error) {
     console.error('Error saving products:', error);
   }
@@ -308,8 +332,8 @@ app.get('/api/user', (req, res) => {
   }
 });
 
-app.get('/api/products', (req, res) => {
-  const products = loadProducts();
+app.get('/api/products', async (req, res) => {
+  const products = await loadProducts();
   res.json({ success: true, products });
 });
 
@@ -335,51 +359,92 @@ function checkAdmin(req, res, next) {
 }
 
 app.post('/api/products', checkAdmin, async (req, res) => {
-  const products = loadProducts();
-  const newProduct = {
-    id: Date.now(),
-    ...req.body,
-    createdAt: new Date()
-  };
-  
-  products.push(newProduct);
-  saveProducts(products);
-  
-  await logProductAction('add', newProduct, req.user);
-  
-  res.json({ success: true, product: newProduct });
+  try {
+    const productsCollection = db.collection('products');
+    const newProduct = {
+      id: Date.now(),
+      ...req.body,
+      createdAt: new Date()
+    };
+    
+    await productsCollection.insertOne(newProduct);
+    await logProductAction('add', newProduct, req.user);
+    
+    res.json({ success: true, product: newProduct });
+  } catch (error) {
+    console.error('Error creating product:', error);
+    res.status(500).json({ success: false, error: 'Failed to create product' });
+  }
 });
 
 app.put('/api/products/:id', checkAdmin, async (req, res) => {
-  let products = loadProducts();
-  const index = products.findIndex(p => p.id === parseInt(req.params.id));
-  
-  if (index === -1) {
-    return res.status(404).json({ success: false, error: 'Product not found' });
-  }
+  try {
+    const productsCollection = db.collection('products');
+    const productId = parseInt(req.params.id);
+    
+    const product = await productsCollection.findOne({ id: productId });
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
 
-  products[index] = { ...products[index], ...req.body };
-  saveProducts(products);
-  
-  await logProductAction('edit', products[index], req.user);
-  
-  res.json({ success: true, product: products[index] });
+    const updatedProduct = { ...product, ...req.body };
+    await productsCollection.updateOne({ id: productId }, { $set: updatedProduct });
+    
+    await logProductAction('edit', updatedProduct, req.user);
+    
+    res.json({ success: true, product: updatedProduct });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ success: false, error: 'Failed to update product' });
+  }
 });
 
 app.delete('/api/products/:id', checkAdmin, async (req, res) => {
-  let products = loadProducts();
-  const deletedProduct = products.find(p => p.id === parseInt(req.params.id));
-  products = products.filter(p => p.id !== parseInt(req.params.id));
-  saveProducts(products);
-  
-  if (deletedProduct) {
-    await logProductAction('delete', deletedProduct, req.user);
+  try {
+    const productsCollection = db.collection('products');
+    const productId = parseInt(req.params.id);
+    
+    const deletedProduct = await productsCollection.findOne({ id: productId });
+    await productsCollection.deleteOne({ id: productId });
+    
+    if (deletedProduct) {
+      await logProductAction('delete', deletedProduct, req.user);
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete product' });
   }
-  
-  res.json({ success: true });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+async function initializeApp() {
+  await connectDB();
+  
+  const productsFile = path.join(__dirname, 'products.json');
+  if (fs.existsSync(productsFile)) {
+    try {
+      const fileProducts = JSON.parse(fs.readFileSync(productsFile, 'utf8'));
+      const productsCollection = db.collection('products');
+      const existingCount = await productsCollection.countDocuments();
+      
+      if (existingCount === 0 && fileProducts.length > 0) {
+        console.log('Migrating products from JSON file to MongoDB...');
+        await productsCollection.insertMany(fileProducts);
+        console.log(`Migrated ${fileProducts.length} products`);
+      }
+    } catch (error) {
+      console.error('Error during migration:', error);
+    }
+  }
+  
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+initializeApp().catch(error => {
+  console.error('Failed to initialize app:', error);
+  process.exit(1);
 });
