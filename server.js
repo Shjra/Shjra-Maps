@@ -245,8 +245,21 @@ app.get('/auth/discord/callback', async (req, res) => {
         console.error('Error saving session:', err);
         return res.redirect('/?error=Session save failed');
       }
-      console.log('Session saved, redirecting to home with success');
-      res.redirect(`/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}`);
+      console.log('Session saved, sending HTML redirect');
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Redirecting...</title>
+        </head>
+        <body>
+          <script>
+            window.location.href = '/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}';
+          </script>
+        </body>
+        </html>
+      `);
     });
   } catch (error) {
     console.error('Error in callback:', error.response?.data || error.message);
