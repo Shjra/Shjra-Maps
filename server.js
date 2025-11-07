@@ -188,78 +188,89 @@ app.get('/auth/discord/callback', async (req, res) => {
       bannerUrl = user.banner_color;
     }
 
-    req.session.user = {
-      id: userId,
-      username: userName,
-      discriminator: userDiscriminator,
-      avatar: avatarUrl,
-      banner: bannerUrl,
-      accessToken: accessToken
-    };
-
-    console.log('Session set for user:', req.session.user.id);
-    console.log('Session ID:', req.sessionID);
-    console.log('Session cookies:', res.getHeaders()['set-cookie']);
-
-    const now = new Date();
-    const formattedDate = now.toLocaleString('it-IT', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-
-    const embedPayload = {
-      embeds: [{
-        title: "🔐 Nuovo Login",
-        description: "Un utente ha effettuato il login",
-        color: 0x7289DA,
-        fields: [
-          {
-            name: "👤 Username",
-            value: `${userName}#${userDiscriminator}`,
-            inline: true
-          },
-          {
-            name: "🆔 Discord ID",
-            value: userId,
-            inline: true
-          },
-          {
-            name: "📅 Data e Ora",
-            value: formattedDate,
-            inline: false
-          }
-        ],
-        timestamp: new Date().toISOString()
-      }]
-    };
-
-    await axios.post(WEBHOOK_URL, embedPayload);
-    console.log('Webhook sent');
-
-    req.session.save((err) => {
+    req.session.regenerate((err) => {
       if (err) {
-        console.error('Error saving session:', err);
-        return res.redirect('/?error=Session save failed');
+        console.error('Error regenerating session:', err);
+        return res.redirect('/?error=Session regeneration failed');
       }
-      console.log('Session saved, sending HTML redirect');
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Redirecting...</title>
-        </head>
-        <body>
-          <script>
-            window.location.href = '/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}';
-          </script>
-        </body>
-        </html>
-      `);
+
+      req.session.user = {
+        id: userId,
+        username: userName,
+        discriminator: userDiscriminator,
+        avatar: avatarUrl,
+        banner: bannerUrl,
+        accessToken: accessToken
+      };
+
+      console.log('Session set for user:', req.session.user.id);
+      console.log('Session ID:', req.sessionID);
+      console.log('Session cookies:', res.getHeaders()['set-cookie']);
+
+      const now = new Date();
+      const formattedDate = now.toLocaleString('it-IT', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      const embedPayload = {
+        embeds: [{
+          title: "🔐 Nuovo Login",
+          description: "Un utente ha effettuato il login",
+          color: 0x7289DA,
+          fields: [
+            {
+              name: "👤 Username",
+              value: `${userName}#${userDiscriminator}`,
+              inline: true
+            },
+            {
+              name: "🆔 Discord ID",
+              value: userId,
+              inline: true
+            },
+            {
+              name: "📅 Data e Ora",
+              value: formattedDate,
+              inline: false
+            }
+          ],
+          timestamp: new Date().toISOString()
+        }]
+      };
+
+      axios.post(WEBHOOK_URL, embedPayload).then(() => {
+        console.log('Webhook sent');
+
+        req.session.save((err) => {
+          if (err) {
+            console.error('Error saving session:', err);
+            return res.redirect('/?error=Session save failed');
+          }
+          console.log('Session saved, sending HTML redirect');
+          res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <title>Redirecting...</title>
+            </head>
+            <body>
+              <script>
+                window.location.href = '/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}';
+              </script>
+            </body>
+            </html>
+          `);
+        });
+      }).catch((error) => {
+        console.error('Error posting webhook:', error);
+        res.redirect('/?error=Webhook failed');
+      });
     });
   } catch (error) {
     console.error('Error in callback:', error.response?.data || error.message);
