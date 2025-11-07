@@ -273,7 +273,7 @@ function renderProducts() {
                 </ul>
                 <div class="product-footer">
                     <span class="price">€${parseFloat(product.price).toFixed(2)}</span>
-                    <button class="btn-compra" onclick="alert('Acquista ora')">Acquista</button>
+                    <button class="btn-compra" onclick="window.open('https://discord.gg/jC7e3Rrs3z', '_blank')">Acquista</button>
                 </div>
             </div>
         `;
