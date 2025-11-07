@@ -17,7 +17,7 @@ app.use(session({
   secret: 'fivem-maps-secret',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: true, httpOnly: true, sameSite: 'lax' }
+  cookie: { secure: true, httpOnly: true, sameSite: 'none' }
 }));
 
 const PRODUCTS_FILE = path.join(__dirname, 'products.json');
@@ -119,9 +119,11 @@ app.get('/auth/discord', (req, res) => {
 });
 
 app.get('/auth/discord/callback', async (req, res) => {
+  console.log('Callback reached, code:', req.query.code);
   const code = req.query.code;
 
   if (!code) {
+    console.log('No code provided');
     return res.redirect('/?error=No code provided');
   }
 
@@ -133,9 +135,16 @@ app.get('/auth/discord/callback', async (req, res) => {
     params.append('code', code);
     params.append('redirect_uri', DISCORD_REDIRECT_URI);
 
+    console.log('Token request params:', {
+      client_id: DISCORD_CLIENT_ID,
+      redirect_uri: DISCORD_REDIRECT_URI
+    });
+
     const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', params);
+    console.log('Token response status:', tokenResponse.status);
 
     const accessToken = tokenResponse.data.access_token;
+    console.log('Access token obtained');
 
     const userResponse = await axios.get('https://discord.com/api/users/@me', {
       headers: {
@@ -144,12 +153,14 @@ app.get('/auth/discord/callback', async (req, res) => {
     });
 
     const user = userResponse.data;
+    console.log('User data:', { id: user.id, username: user.username });
+
     const userId = user.id;
     const userName = user.username;
     const userDiscriminator = user.discriminator;
 
     const avatar = user.avatar;
-    const avatarUrl = avatar 
+    const avatarUrl = avatar
       ? `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png?size=256`
       : `https://cdn.discordapp.com/embed/avatars/${(parseInt(userDiscriminator) % 5)}.png`;
 
@@ -169,6 +180,8 @@ app.get('/auth/discord/callback', async (req, res) => {
       banner: bannerUrl,
       accessToken: accessToken
     };
+
+    console.log('Session set for user:', req.session.user.id);
 
     const now = new Date();
     const formattedDate = now.toLocaleString('it-IT', {
@@ -207,15 +220,18 @@ app.get('/auth/discord/callback', async (req, res) => {
     };
 
     await axios.post(WEBHOOK_URL, embedPayload);
+    console.log('Webhook sent');
 
+    console.log('Redirecting to home with success');
     res.redirect(`/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}`);
   } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
+    console.error('Error in callback:', error.response?.data || error.message);
     res.redirect('/?error=Authentication failed');
   }
 });
 
 app.get('/api/user', (req, res) => {
+  console.log('Checking user session:', req.session.user ? 'exists' : 'null');
   if (req.session.user) {
     res.json({
       success: true,
