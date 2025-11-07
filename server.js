@@ -10,7 +10,7 @@ dotenv.config();
 
 const app = express();
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
 const ORIGIN = isProduction 
   ? process.env.DISCORD_REDIRECT_URI_PROD.split('/auth')[0]
   : 'http://localhost:3000';
@@ -31,6 +31,7 @@ app.use(session({
     secure: isProduction,
     httpOnly: true, 
     sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000
   }
 }));
@@ -197,6 +198,8 @@ app.get('/auth/discord/callback', async (req, res) => {
     };
 
     console.log('Session set for user:', req.session.user.id);
+    console.log('Session ID:', req.sessionID);
+    console.log('Session cookies:', res.getHeaders()['set-cookie']);
 
     const now = new Date();
     const formattedDate = now.toLocaleString('it-IT', {
@@ -253,6 +256,8 @@ app.get('/auth/discord/callback', async (req, res) => {
 
 app.get('/api/user', (req, res) => {
   console.log('Checking user session:', req.session.user ? 'exists' : 'null');
+  console.log('Session ID received:', req.sessionID);
+  console.log('Cookies received:', req.headers.cookie);
   if (req.session.user) {
     res.json({
       success: true,
