@@ -269,35 +269,32 @@ app.get('/auth/discord/callback', async (req, res) => {
       }]
     };
 
-    axios.post(WEBHOOK_URL, embedPayload).then(() => {
-      console.log('Webhook sent');
-      
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Redirecting...</title>
-        </head>
-        <body>
-          <script>
-            localStorage.setItem('token', '${token}');
-            localStorage.setItem('user', JSON.stringify({
-              id: '${userId}',
-              username: '${userName}',
-              discriminator: '${userDiscriminator}',
-              avatar: '${avatarUrl}',
-              banner: '${bannerUrl}'
-            }));
-            window.location.href = '/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}';
-          </script>
-        </body>
-        </html>
-      `);
-    }).catch((error) => {
+    axios.post(WEBHOOK_URL, embedPayload).catch((error) => {
       console.error('Error posting webhook:', error);
-      res.redirect('/?error=Webhook failed');
     });
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Redirecting...</title>
+      </head>
+      <body>
+        <script>
+          localStorage.setItem('token', '${token}');
+          localStorage.setItem('user', JSON.stringify({
+            id: '${userId}',
+            username: '${userName}',
+            discriminator: '${userDiscriminator}',
+            avatar: '${avatarUrl}',
+            banner: '${bannerUrl}'
+          }));
+          window.location.href = '/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}';
+        </script>
+      </body>
+      </html>
+    `);
   } catch (error) {
     console.error('Error in callback:', error.response?.data || error.message);
     res.redirect('/?error=Authentication failed');
