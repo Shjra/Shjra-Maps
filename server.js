@@ -11,7 +11,7 @@ dotenv.config();
 
 const app = express();
 
-const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' || process.env.KOYEB === 'true';
 const ORIGIN = isProduction 
   ? process.env.DISCORD_REDIRECT_URI_PROD.split('/auth')[0]
   : 'http://localhost:3000';
@@ -91,7 +91,6 @@ async function saveProducts(productsData) {
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' || process.env.KOYEB === 'true';
 const DISCORD_REDIRECT_URI = isProduction 
   ? (process.env.DISCORD_REDIRECT_URI_PROD || 'https://shjra-maps.onrender.com/auth/discord/callback')
   : (process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback');
