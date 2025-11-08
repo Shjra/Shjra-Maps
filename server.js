@@ -166,6 +166,23 @@ app.get('/auth/discord', (req, res) => {
   res.redirect(discordAuthUrl);
 });
 
+async function fetchWithRetry(fn, maxRetries = 2, delayMs = 1000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      const status = error.response?.status;
+      if (status === 429 || status === 503) {
+        console.log(`Retry ${i + 1}/${maxRetries - 1} after ${delayMs}ms due to status ${status}`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 app.get('/auth/discord/callback', async (req, res) => {
   console.log('Callback reached, code:', req.query.code);
   const code = req.query.code;
@@ -188,17 +205,30 @@ app.get('/auth/discord/callback', async (req, res) => {
       redirect_uri: DISCORD_REDIRECT_URI
     });
 
-    const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', params);
+    const axiosConfig = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 10000
+    };
+
+    const tokenResponse = await fetchWithRetry(
+      () => axios.post('https://discord.com/api/oauth2/token', params, axiosConfig)
+    );
     console.log('Token response status:', tokenResponse.status);
 
     const accessToken = tokenResponse.data.access_token;
     console.log('Access token obtained');
 
-    const userResponse = await axios.get('https://discord.com/api/users/@me', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
+    const userResponse = await fetchWithRetry(
+      () => axios.get('https://discord.com/api/users/@me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 10000
+      })
+    );
 
     const user = userResponse.data;
     console.log('User data:', { id: user.id, username: user.username });
@@ -305,7 +335,20 @@ app.get('/auth/discord/callback', async (req, res) => {
       </html>
     `);
   } catch (error) {
-    console.error('Error in callback:', error.response?.data || error.message);
+    const errorData = error.response?.data || error.message;
+    const errorStatus = error.response?.status;
+    
+    if (errorStatus === 429 || (typeof errorData === 'string' && errorData.includes('1015'))) {
+      console.error('Discord rate limited (429/1015):', error.message);
+      return res.redirect('/?error=Rate limited - please try again in a few moments');
+    }
+    
+    if (errorStatus >= 500) {
+      console.error('Discord server error:', errorStatus);
+      return res.redirect('/?error=Discord service temporarily unavailable');
+    }
+    
+    console.error('Error in callback:', errorData);
     res.redirect('/?error=Authentication failed');
   }
 });
