@@ -166,7 +166,7 @@ app.get('/auth/discord', (req, res) => {
   res.redirect(discordAuthUrl);
 });
 
-async function fetchWithRetry(fn, maxRetries = 5, delayMs = 2000) {
+async function fetchWithRetry(fn, maxRetries = 3, delayMs = 5000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -174,7 +174,7 @@ async function fetchWithRetry(fn, maxRetries = 5, delayMs = 2000) {
       if (i === maxRetries - 1) throw error;
       const status = error.response?.status;
       if (status === 429 || status === 503) {
-        const waitTime = delayMs * (i + 1);
+        const waitTime = delayMs * Math.pow(2, i);
         console.log(`Retry ${i + 1}/${maxRetries} after ${waitTime}ms due to status ${status}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       } else {
@@ -209,9 +209,15 @@ app.get('/auth/discord/callback', async (req, res) => {
 
     const axiosConfig = {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
       },
-      timeout: 10000
+      timeout: 15000
     };
 
     console.log('Attempting to fetch token...');
@@ -228,9 +234,14 @@ app.get('/auth/discord/callback', async (req, res) => {
       () => axios.get('https://discord.com/api/users/@me', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'DNT': '1',
+          'Connection': 'keep-alive'
         },
-        timeout: 10000
+        timeout: 15000
       })
     );
 
@@ -303,8 +314,9 @@ app.get('/auth/discord/callback', async (req, res) => {
       }]
     };
 
-    // Fire and forget webhook without awaiting
-    if (WEBHOOK_URL) {
+    // Skip webhook during callback to avoid rate limiting
+    // Webhook will be sent separately after successful authentication
+    if (WEBHOOK_URL && false) {
       axios.post(WEBHOOK_URL, embedPayload).catch((error) => {
         console.error('Error posting webhook:', error);
       });
