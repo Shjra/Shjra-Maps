@@ -32,6 +32,7 @@
                 <li id="nav-chi-siamo" style="display: none;"><button class="nav-btn" id="btn-chi-siamo" onclick="navigateTo('chi-siamo')">Chi Siamo</button></li>
                 <li id="nav-contatti" style="display: none;"><button class="nav-btn" id="btn-contatti" onclick="navigateTo('contatti')">Contatti</button></li>
                 <li id="nav-cart" style="display: none;"><button class="nav-btn cart-btn" onclick="navigateTo('carrello')">🛒 Carrello <span class="cart-badge" id="cart-badge">0</span></button></li>
+                <li id="nav-terms" style="display: none;"><button class="nav-btn" id="btn-terms" onclick="openTermsModal()">🧾 Termini</button></li>
                 <li id="nav-wishlist" style="display: none;"><button class="nav-btn wishlist-btn" onclick="navigateTo('wishlist')">❤️ Wishlist <span class="wishlist-badge" id="wishlist-badge">0</span></button></li>
                 <li id="nav-staff" style="display: none;"><button class="nav-btn" id="btn-staff" onclick="navigateTo('staff')" style="color: #ffd700;">⚙️ Staff</button></li>
                 <li id="login-container" style="display: block;">
@@ -362,6 +363,110 @@
             
             <div class="paypal-info" style="margin-top: 1.5rem; padding: 1rem; background: rgba(255, 193, 7, 0.1); border-radius: 10px; border-left: 3px solid #ffc107;">
                 <p style="font-size: 0.9rem; color: #ffc107; margin: 0;"><strong>💡 Nota PayPal:</strong> Utilizza l'opzione "Amici e Familiari" e inserisci il tuo ID Discord nella descrizione del pagamento.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="terms-modal" class="terms-modal" style="display: none;">
+        <div class="terms-modal-content">
+            <button class="modal-close" onclick="closeTermsModal()">&times;</button>
+            <div class="terms-header">
+                <div class="terms-icon">🧾</div>
+                <div class="terms-title">
+                    <h2>Termini di Servizio e Informativa sulla Privacy – Shjra Maps</h2>
+                    <p class="terms-meta">Ultimo aggiornamento: 8 novembre 2025</p>
+                </div>
+            </div>
+            <div class="terms-body">
+                <p><strong>Sito e compagnia:</strong> Shjra Maps</p>
+                <p><strong>Email di contatto:</strong> <a href="mailto:seansenatore11048@gmail.com">seansenatore11048@gmail.com</a></p>
+                <p>Benvenuto su Shjra Maps, il tuo punto di riferimento per mappe digitali personalizzate per server GTA V FiveM. Utilizzando il nostro sito e acquistando i nostri prodotti, accetti i seguenti Termini di Servizio e la nostra Informativa sulla Privacy.</p>
+
+                <div class="terms-section">
+                    <h3>📌 1. Prodotti Digitali</h3>
+                    <ul>
+                        <li>Tutti i contenuti venduti sono prodotti digitali (es. file .ymap, .xml, .meta) destinati all’uso su server FiveM.</li>
+                        <li>Dopo il pagamento, riceverai l’accesso al download o alla consegna via email/link privato.</li>
+                        <li>Non sono previsti rimborsi per prodotti già scaricati o consegnati.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-section">
+                    <h3>📄 2. Licenza d’Uso</h3>
+                    <ul>
+                        <li>L’acquisto di una mappa ti garantisce una licenza non esclusiva e non trasferibile per l’uso su un server FiveM.</li>
+                        <li>È vietata la rivendita, la condivisione pubblica o la modifica non autorizzata.</li>
+                        <li>L’uso commerciale è consentito solo nei limiti indicati nella descrizione del prodotto.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-section">
+                    <h3>🧠 3. Proprietà Intellettuale</h3>
+                    <ul>
+                        <li>Tutti i contenuti (mappe, loghi, testi, immagini) sono protetti da copyright.</li>
+                        <li>Qualsiasi uso non autorizzato comporta la sospensione dell’account e possibili azioni legali.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-section">
+                    <h3>💳 4. Pagamenti</h3>
+                    <ul>
+                        <li>I pagamenti sono gestiti tramite piattaforme sicure (es. PayPal, Stripe).</li>
+                        <li>I prezzi sono indicati in euro (€) e possono variare senza preavviso.</li>
+                        <li>Per problemi con il pagamento, contattaci prima di aprire una contestazione.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-section">
+                    <h3>🛠️ 5. Supporto Tecnico</h3>
+                    <ul>
+                        <li>Offriamo assistenza per problemi legati all’installazione o al funzionamento delle mappe.</li>
+                        <li>Il supporto è disponibile via email all’indirizzo <a href="mailto:seansenatore11048@gmail.com">seansenatore11048@gmail.com</a> entro 48 ore lavorative.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-section">
+                    <h3>🚫 6. Limitazioni di Responsabilità</h3>
+                    <ul>
+                        <li>Shjra Maps non è affiliato con Rockstar Games, Take-Two Interactive o FiveM.</li>
+                        <li>Non garantiamo compatibilità con versioni modificate o non ufficiali del gioco.</li>
+                        <li>Non siamo responsabili per danni, crash o malfunzionamenti derivanti dall’uso dei nostri prodotti.</li>
+                    </ul>
+                </div>
+
+                <div class="terms-section">
+                    <h3>🔐 7. Informativa sulla Privacy</h3>
+                    <div class="terms-subsection">
+                        <h4>Dati Raccolti</h4>
+                        <ul>
+                            <li>Raccogliamo solo i dati necessari: nome, email, indirizzo IP, cronologia acquisti.</li>
+                            <li>Non raccogliamo dati sensibili né informazioni bancarie (gestite da provider esterni).</li>
+                        </ul>
+                    </div>
+                    <div class="terms-subsection">
+                        <h4>Uso dei Dati</h4>
+                        <ul>
+                            <li>I dati vengono utilizzati esclusivamente per elaborare ordini, fornire assistenza e inviare comunicazioni relative agli acquisti.</li>
+                        </ul>
+                    </div>
+                    <div class="terms-subsection">
+                        <h4>Conservazione e Sicurezza</h4>
+                        <ul>
+                            <li>I dati sono conservati su server sicuri e non vengono condivisi con terze parti, salvo obblighi di legge.</li>
+                            <li>Puoi richiedere la cancellazione dei tuoi dati scrivendo a <a href="mailto:seansenatore11048@gmail.com">seansenatore11048@gmail.com</a>.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="terms-section">
+                    <h3>🔄 8. Modifiche ai Termini</h3>
+                    <p>Shjra Maps si riserva il diritto di modificare i presenti Termini e l’Informativa sulla Privacy. Le modifiche saranno pubblicate su questa pagina e avranno effetto immediato.</p>
+                </div>
+
+                <div class="terms-section">
+                    <h3>📬 Contatti</h3>
+                    <p>Per qualsiasi domanda o richiesta, scrivici a <a href="mailto:seansenatore11048@gmail.com">seansenatore11048@gmail.com</a>.</p>
+                </div>
             </div>
         </div>
     </div>

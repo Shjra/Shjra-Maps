@@ -358,6 +358,22 @@ function toggleProfileModal() {
     modal.style.display = isVisible ? 'none' : 'block';
 }
 
+function openTermsModal() {
+    playSound('click');
+    const modal = document.getElementById('terms-modal');
+    if (modal) {
+        modal.classList.add('show');
+    }
+}
+
+function closeTermsModal() {
+    playSound('click');
+    const modal = document.getElementById('terms-modal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
 function logout() {
     playSound('click');
     token = null;
@@ -386,6 +402,10 @@ function updateUIAfterLogout() {
     updateNavButtons();
     updateContentSections();
     document.getElementById('user-profile').style.display = 'none';
+    const termsModal = document.getElementById('terms-modal');
+    if (termsModal) {
+        termsModal.classList.remove('show');
+    }
     navigateTo('home');
 }
 
@@ -393,6 +413,7 @@ function updateNavButtons() {
     document.getElementById('nav-prodotti').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-cart').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-wishlist').style.display = isLoggedIn ? 'block' : 'none';
+    document.getElementById('nav-terms').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-chi-siamo').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-contatti').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-staff').style.display = isStaff() ? 'block' : 'none';
@@ -726,7 +747,17 @@ function closePurchaseModal() {
 function purchaseViaDiscord() {
     playSound('success');
     triggerConfetti();
-    showToast('🎉 Acquisto avviato! Unisciti al nostro Discord', 'success');
+
+    if (currentProduct && currentProduct.cart) {
+        // Acquisto carrello
+        const cart = currentProduct.cart;
+        const total = currentProduct.total;
+        showToast(`🎉 Acquisto carrello avviato! Totale: €${total.toFixed(2)} - Unisciti al nostro Discord`, 'success');
+    } else {
+        // Acquisto singolo
+        showToast('🎉 Acquisto avviato! Unisciti al nostro Discord', 'success');
+    }
+
     window.open('https://discord.gg/jC7e3Rrs3z', '_blank');
     setTimeout(() => {
         closePurchaseModal();
@@ -735,22 +766,32 @@ function purchaseViaDiscord() {
 
 function purchaseViaPayPal() {
     playSound('success');
-    
+
     if (!currentProduct || !currentUser) {
         showToast('Errore: Prodotto o utente non trovato', 'error');
         return;
     }
-    
-    const productName = currentProduct.name;
-    const productPrice = parseFloat(currentProduct.price);
-    const discount = currentProduct.discount || 0;
-    const finalPrice = (productPrice * (1 - discount / 100)).toFixed(2);
-    const discordId = currentUser.id;
-    const discordUsername = currentUser.username;
-    
-    const description = `Acquisto: ${productName} - ID Discord: ${discordId} (${discordUsername})`;
+
+    let description = '';
+    let finalPrice = 0;
+
+    if (currentProduct.cart) {
+        // Acquisto carrello
+        const cart = currentProduct.cart;
+        const total = currentProduct.total;
+        finalPrice = total.toFixed(2);
+        description = `Acquisto Carrello (${cart.length} prodotti): ${cart.map(item => `${item.name} x${item.quantity}`).join(', ')} - ID Discord: ${currentUser.id} (${currentUser.username})`;
+    } else {
+        // Acquisto singolo
+        const productName = currentProduct.name;
+        const productPrice = parseFloat(currentProduct.price);
+        const discount = currentProduct.discount || 0;
+        finalPrice = (productPrice * (1 - discount / 100)).toFixed(2);
+        description = `Acquisto: ${productName} - ID Discord: ${currentUser.id} (${currentUser.username})`;
+    }
+
     const paypalLink = `https://www.paypal.com/paypalme/seantoppe00/${finalPrice}?message=${encodeURIComponent(description)}`;
-    
+
     triggerConfetti();
     showToast('🎉 Pagamento avviato via PayPal', 'success');
     window.open(paypalLink, '_blank');
@@ -1531,10 +1572,10 @@ function proceedToCheckout() {
     showToast('Carrello vuoto', 'error');
     return;
   }
-  
-  const total = CartManager.getTotal();
-  showToast(`Totale: €${total.toFixed(2)} - Contattaci su Discord per completare l'acquisto!`, 'info');
-  window.open('https://discord.gg/jC7e3Rrs3z', '_blank');
+
+  // Imposta il carrello come currentProduct per il modal
+  currentProduct = { cart: cart, total: CartManager.getTotal() };
+  showPurchaseOptions();
 }
 
 /* ===== THEME TOGGLE ===== */
