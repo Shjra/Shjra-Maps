@@ -173,7 +173,7 @@ async function fetchWithRetry(fn, maxRetries = 3, delayMs = 5000) {
     } catch (error) {
       if (i === maxRetries - 1) throw error;
       const status = error.response?.status;
-      if (status === 429 || status === 503) {
+      if (status === 429 || status === 503 || (typeof error.response?.data === 'string' && error.response.data.includes('1015'))) {
         const waitTime = delayMs * Math.pow(2, i);
         console.log(`Retry ${i + 1}/${maxRetries} after ${waitTime}ms due to status ${status}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -222,7 +222,9 @@ app.get('/auth/discord/callback', async (req, res) => {
 
     console.log('Attempting to fetch token...');
     const tokenResponse = await fetchWithRetry(
-      () => axios.post('https://discord.com/api/oauth2/token', params, axiosConfig)
+      () => axios.post('https://discord.com/api/oauth2/token', params, axiosConfig),
+      5,
+      10000
     );
     console.log('Token response status:', tokenResponse.status);
     console.log('Token fetched successfully');
@@ -242,7 +244,9 @@ app.get('/auth/discord/callback', async (req, res) => {
           'Connection': 'keep-alive'
         },
         timeout: 15000
-      })
+      }),
+      5,
+      10000
     );
 
     const user = userResponse.data;
@@ -356,7 +360,9 @@ app.get('/auth/discord/callback', async (req, res) => {
     
     if (errorStatus === 429 || (typeof errorData === 'string' && errorData.includes('1015'))) {
       console.error('Discord rate limited (429/1015):', error.message);
-      return res.redirect('/?error=Rate limited - please try again in a few moments');
+      // Instead of redirecting immediately, wait and retry
+      await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+      return res.redirect('/auth/discord'); // Redirect back to auth to retry
     }
     
     if (errorStatus >= 500) {
