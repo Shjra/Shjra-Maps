@@ -497,6 +497,31 @@ app.delete('/api/products/:id', checkAdmin, async (req, res) => {
   }
 });
 
+app.patch('/api/products/:id/badge', checkAdmin, async (req, res) => {
+  try {
+    const productsCollection = db.collection('products');
+    const productId = parseInt(req.params.id);
+    const { badge, discount } = req.body;
+    
+    const updateData = {};
+    if (badge !== undefined) updateData.badge = badge || null;
+    if (discount !== undefined) updateData.discount = discount || 0;
+    
+    const result = await productsCollection.updateOne(
+      { id: productId },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to update badge' });
+  }
+});
+
 async function initializeApp() {
   await connectDB();
   

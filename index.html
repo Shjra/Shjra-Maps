@@ -405,6 +405,22 @@
                     <label>Features (uno per riga)</label>
                     <textarea id="edit-prod-features" rows="3" required></textarea>
                 </div>
+                <div style="background: rgba(102, 126, 234, 0.1); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <h4 style="margin-bottom: 1rem; color: #667eea;">Badge & Sconti</h4>
+                    <div class="form-group">
+                        <label>Badge Prodotto</label>
+                        <select id="edit-prod-badge">
+                            <option value="">Nessuno</option>
+                            <option value="new">🆕 Nuovo</option>
+                            <option value="popular">⭐ Popolare</option>
+                            <option value="hot">🔥 Hot Deal</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sconto (%) - 0 per nessuno sconto</label>
+                        <input type="number" id="edit-prod-discount" min="0" max="100" value="0" step="1">
+                    </div>
+                </div>
                 <div class="edit-modal-buttons">
                     <button type="submit" class="btn-save">Salva Modifiche</button>
                     <button type="button" class="btn-cancel" onclick="closeEditModal()">Annulla</button>
@@ -412,6 +428,12 @@
             </form>
         </div>
     </div>
+
+    <footer style="position: relative; padding: 2rem; text-align: center; color: rgba(255, 255, 255, 0.6); margin-top: 3rem; background: rgba(102, 126, 234, 0.05);">
+        <p>© 2024 Shjra Maps. Tutti i diritti riservati.</p>
+        <div class="wave"></div>
+        <div class="wave"></div>
+    </footer>
 
     <script src="script.js"></script>
 </body>

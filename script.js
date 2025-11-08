@@ -421,11 +421,15 @@ function renderProducts() {
             ? `background-image: url('${product.imageUrl}'); background-size: cover; background-position: center;`
             : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)}); background-image: url('shjra-logo.png'); background-blend-mode: overlay; background-position: center; background-repeat: no-repeat; background-size: 60%;`;
         
+        const { badgeHtml, priceHtml } = renderProductWithBadges(product);
+        
         const card = document.createElement('div');
         card.className = 'product-card';
         card.style.cursor = 'pointer';
+        card.style.position = 'relative';
         card.onclick = () => openProductModal(product);
         card.innerHTML = `
+            ${badgeHtml}
             <div class="product-image" style="${imageStyle}"></div>
             <div class="product-content">
                 <h3>${product.name}</h3>
@@ -435,7 +439,7 @@ function renderProducts() {
                     ${features.map(f => `<li>${f}</li>`).join('')}
                 </ul>
                 <div class="product-footer">
-                    <span class="price">€${parseFloat(product.price).toFixed(2)}</span>
+                    <div>${priceHtml}</div>
                     <button class="btn-compra" onclick="event.stopPropagation(); openPurchaseFromCard(${product.id})">Acquista</button>
                 </div>
             </div>
@@ -500,6 +504,8 @@ function closePurchaseModal() {
 
 function purchaseViaDiscord() {
     playSound('success');
+    triggerConfetti();
+    showToast('🎉 Acquisto avviato! Unisciti al nostro Discord', 'success');
     window.open('https://discord.gg/jC7e3Rrs3z', '_blank');
     setTimeout(() => {
         closePurchaseModal();
@@ -510,18 +516,22 @@ function purchaseViaPayPal() {
     playSound('success');
     
     if (!currentProduct || !currentUser) {
-        alert('Errore: Prodotto o utente non trovato');
+        showToast('Errore: Prodotto o utente non trovato', 'error');
         return;
     }
     
     const productName = currentProduct.name;
-    const productPrice = parseFloat(currentProduct.price).toFixed(2);
+    const productPrice = parseFloat(currentProduct.price);
+    const discount = currentProduct.discount || 0;
+    const finalPrice = (productPrice * (1 - discount / 100)).toFixed(2);
     const discordId = currentUser.id;
     const discordUsername = currentUser.username;
     
     const description = `Acquisto: ${productName} - ID Discord: ${discordId} (${discordUsername})`;
-    const paypalLink = `https://www.paypal.com/paypalme/seantoppe00/${productPrice}?message=${encodeURIComponent(description)}`;
+    const paypalLink = `https://www.paypal.com/paypalme/seantoppe00/${finalPrice}?message=${encodeURIComponent(description)}`;
     
+    triggerConfetti();
+    showToast('🎉 Pagamento avviato via PayPal', 'success');
     window.open(paypalLink, '_blank');
     setTimeout(() => {
         closePurchaseModal();
@@ -718,6 +728,8 @@ function editProduct(productId) {
     document.getElementById('edit-prod-color').value = product.color;
     document.getElementById('edit-prod-image').value = product.imageUrl || '';
     document.getElementById('edit-prod-features').value = features;
+    document.getElementById('edit-prod-badge').value = product.badge || '';
+    document.getElementById('edit-prod-discount').value = product.discount || 0;
     
     document.getElementById('edit-modal').style.display = 'flex';
 }
@@ -740,6 +752,8 @@ async function saveProduct(event) {
     const color = document.getElementById('edit-prod-color').value;
     const imageUrl = document.getElementById('edit-prod-image').value;
     const featuresText = document.getElementById('edit-prod-features').value;
+    const badge = document.getElementById('edit-prod-badge').value || null;
+    const discount = parseInt(document.getElementById('edit-prod-discount').value) || 0;
     
     const features = featuresText.split('\n').filter(f => f.trim());
     
@@ -754,7 +768,9 @@ async function saveProduct(event) {
                 price,
                 color,
                 imageUrl,
-                features
+                features,
+                badge,
+                discount
             })
         });
         
@@ -764,13 +780,13 @@ async function saveProduct(event) {
             playSound('success');
             closeEditModal();
             await loadProductsFromAPI();
-            alert('✅ Prodotto modificato con successo!');
+            showToast('✅ Prodotto modificato con successo!', 'success');
         } else {
             playSound('error');
-            alert('❌ Errore: ' + data.error);
+            showToast('❌ Errore: ' + data.error, 'error');
         }
     } catch (error) {
-        alert('❌ Errore nella richiesta');
+        showToast('❌ Errore nella richiesta', 'error');
     }
 }
 
@@ -829,4 +845,162 @@ window.addEventListener('click', function(event) {
     if (event.target === purchaseModal) {
         closePurchaseModal();
     }
+});
+
+/* ===== TOAST NOTIFICATIONS ===== */
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
+  
+  playSound(type === 'error' ? 'error' : 'success');
+}
+
+/* ===== THEME TOGGLE ===== */
+function initThemeToggle() {
+  const isDarkMode = localStorage.getItem('darkMode') === 'true';
+  if (isDarkMode) {
+    document.body.classList.add('dark-mode');
+  }
+  
+  const themeBtn = document.createElement('button');
+  themeBtn.className = 'theme-toggle';
+  themeBtn.textContent = isDarkMode ? '☀️' : '🌙';
+  themeBtn.onclick = toggleTheme;
+  document.body.appendChild(themeBtn);
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('darkMode', isDark);
+  document.querySelector('.theme-toggle').textContent = isDark ? '☀️' : '🌙';
+  playSound('click');
+  showToast(isDark ? '🌙 Dark mode attivato' : '☀️ Light mode attivato');
+}
+
+/* ===== FLOATING DISCORD BUTTON ===== */
+function initFloatingDiscordBtn() {
+  const btn = document.createElement('button');
+  btn.className = 'floating-discord-btn';
+  btn.textContent = '💬';
+  btn.onclick = () => {
+    playSound('click');
+    window.open('https://discord.gg/jC7e3Rrs3z', '_blank');
+  };
+  document.body.appendChild(btn);
+}
+
+/* ===== SCROLL ANIMATIONS ===== */
+function initScrollAnimations() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+  
+  document.querySelectorAll('.product-card').forEach(el => {
+    el.classList.add('scroll-in');
+    observer.observe(el);
+  });
+}
+
+/* ===== CONFETTI ANIMATION ===== */
+function triggerConfetti() {
+  const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe'];
+  for (let i = 0; i < 50; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti fall';
+    confetti.style.left = Math.random() * 100 + '%';
+    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.delay = Math.random() * 0.5 + 's';
+    document.body.appendChild(confetti);
+    
+    setTimeout(() => confetti.remove(), 3000);
+  }
+}
+
+/* ===== PARALLAX EFFECT ===== */
+function initParallax() {
+  const bg = document.querySelector('.gradient-bg');
+  if (!bg) return;
+  
+  window.addEventListener('scroll', () => {
+    const scrolled = window.pageYOffset;
+    bg.style.transform = `translateY(${scrolled * 0.5}px)`;
+  });
+}
+
+/* ===== SKELETON LOADING ===== */
+function showSkeletonLoading() {
+  const grid = document.getElementById('products-grid');
+  if (!grid) return;
+  
+  grid.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    grid.innerHTML += `
+      <div class="skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-text">
+          <div class="skeleton-line title"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line"></div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+/* ===== PRODUCT BADGES & DISCOUNTS ===== */
+function renderProductWithBadges(product) {
+  let badgeHtml = '';
+  
+  if (product.badge) {
+    const badgeTypes = {
+      'new': { emoji: '🆕', text: 'Nuovo', class: 'badge-new' },
+      'popular': { emoji: '⭐', text: 'Popolare', class: 'badge-popular' },
+      'hot': { emoji: '🔥', text: 'Hot Deal', class: 'badge-hot' }
+    };
+    
+    const badgeInfo = badgeTypes[product.badge];
+    if (badgeInfo) {
+      badgeHtml = `<div class="product-badge ${badgeInfo.class}">${badgeInfo.emoji} ${badgeInfo.text}</div>`;
+    }
+  }
+  
+  let priceHtml = `<span class="price">€${parseFloat(product.price).toFixed(2)}</span>`;
+  
+  if (product.discount && product.discount > 0) {
+    const discountedPrice = (parseFloat(product.price) * (1 - product.discount / 100)).toFixed(2);
+    priceHtml = `
+      <div>
+        <span class="discount-price">€${parseFloat(product.price).toFixed(2)}</span>
+        <span class="sale-price badge-discount">-${product.discount}%</span>
+      </div>
+      <span class="sale-price">€${discountedPrice}</span>
+    `;
+  }
+  
+  return { badgeHtml, priceHtml };
+}
+
+/* ===== INIT ALL ===== */
+document.addEventListener('DOMContentLoaded', () => {
+  initThemeToggle();
+  initFloatingDiscordBtn();
+  initParallax();
+  
+  const originalLoadProducts = window.loadProductsFromAPI;
+  window.loadProductsFromAPI = async function() {
+    showSkeletonLoading();
+    await originalLoadProducts.call(this);
+    initScrollAnimations();
+  };
 });
