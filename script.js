@@ -131,12 +131,16 @@ function getTimeOfDay() {
 
 function updateBackgroundTheme() {
     const bg = document.querySelector('.gradient-bg');
+    const navbar = document.querySelector('.navbar');
     const staffSection = document.getElementById('staff');
     const allSections = document.querySelectorAll('.content-section');
     const timeOfDay = getTimeOfDay();
     
     bg.classList.remove('morning', 'afternoon', 'evening');
     bg.classList.add(timeOfDay);
+    
+    navbar.classList.remove('morning-theme', 'afternoon-theme', 'evening-theme');
+    navbar.classList.add(timeOfDay + '-theme');
     
     allSections.forEach(section => {
         section.classList.remove('morning-theme', 'afternoon-theme', 'evening-theme');

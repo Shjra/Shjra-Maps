@@ -135,6 +135,13 @@ button {
     z-index: 100;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    transition: all 1.5s ease;
+}
+
+.navbar.morning-theme {
+    background: rgba(255, 250, 240, 0.9);
+    border-bottom-color: rgba(255, 200, 100, 0.25);
+    box-shadow: 0 4px 30px rgba(255, 200, 100, 0.15);
 }
 
 .nav-container {
@@ -157,6 +164,14 @@ button {
     font-size: 1.8rem;
     font-weight: bold;
     background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 1.5s ease;
+}
+
+.navbar.morning-theme .logo span {
+    background: linear-gradient(135deg, #ff9800, #ff6b35);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -214,6 +229,24 @@ button {
     box-shadow: none;
 }
 
+.navbar.morning-theme .nav-btn {
+    background: rgba(255, 200, 100, 0.15);
+    border: 1px solid rgba(255, 200, 100, 0.3);
+    color: #1a1a2e;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar.morning-theme .nav-btn:hover:not(:disabled) {
+    background: rgba(255, 200, 100, 0.3);
+    border-color: rgba(255, 200, 100, 0.6);
+    color: #ff6b35;
+    box-shadow: 0 8px 20px rgba(255, 200, 100, 0.2);
+}
+
+.navbar.morning-theme .nav-btn:active:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(255, 200, 100, 0.15);
+}
+
 .discord-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -238,6 +271,44 @@ button {
 .discord-btn:active {
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.navbar.morning-theme .discord-btn {
+    background: linear-gradient(135deg, #ff9800 0%, #ff6b35 100%);
+    box-shadow: 0 8px 24px rgba(255, 152, 0, 0.35);
+}
+
+.navbar.morning-theme .discord-btn:hover {
+    box-shadow: 0 14px 35px rgba(255, 152, 0, 0.45);
+}
+
+.navbar.morning-theme .discord-btn:active {
+    box-shadow: 0 6px 16px rgba(255, 152, 0, 0.3);
+}
+
+.navbar.afternoon-theme {
+    background: rgba(210, 225, 255, 0.85);
+    border-bottom-color: rgba(102, 126, 234, 0.25);
+    box-shadow: 0 4px 30px rgba(102, 126, 234, 0.15);
+}
+
+.navbar.afternoon-theme .logo span {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.navbar.afternoon-theme .nav-btn {
+    background: rgba(102, 126, 234, 0.12);
+    border: 1px solid rgba(102, 126, 234, 0.25);
+    color: #1a1a2e;
+}
+
+.navbar.afternoon-theme .nav-btn:hover:not(:disabled) {
+    background: rgba(102, 126, 234, 0.25);
+    border-color: rgba(102, 126, 234, 0.5);
+    color: #667eea;
 }
 
 .discord-icon {
@@ -266,10 +337,11 @@ button {
 }
 
 .content-section.morning-theme {
-    background: rgba(255, 245, 230, 0.7);
+    background: rgba(255, 248, 240, 0.92);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 200, 100, 0.2);
+    border: 1px solid rgba(255, 200, 100, 0.28);
     color: #1a1a2e;
+    box-shadow: 0 8px 32px rgba(255, 200, 100, 0.12);
 }
 
 .content-section.afternoon-theme {
@@ -412,10 +484,20 @@ button {
 }
 
 .content-section.morning-theme .hero {
-    background: linear-gradient(135deg, rgba(255, 200, 100, 0.1), rgba(255, 152, 0, 0.05));
+    background: linear-gradient(135deg, rgba(255, 200, 100, 0.18), rgba(255, 152, 0, 0.08));
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 200, 100, 0.2);
+    border: 1px solid rgba(255, 200, 100, 0.28);
+    box-shadow: 0 8px 24px rgba(255, 152, 0, 0.1);
+}
+
+.content-section.morning-theme .hero h1 {
+    color: #1a1a2e;
+    text-shadow: 0 2px 8px rgba(255, 152, 0, 0.1);
+}
+
+.content-section.morning-theme .hero p {
+    color: #333;
 }
 
 .content-section.afternoon-theme .hero {
@@ -478,6 +560,19 @@ button {
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
 }
 
+.content-section.morning-theme .cta-btn {
+    background: linear-gradient(135deg, #ff9800 0%, #ff6b35 100%);
+    box-shadow: 0 10px 28px rgba(255, 152, 0, 0.35);
+}
+
+.content-section.morning-theme .cta-btn:hover {
+    box-shadow: 0 16px 40px rgba(255, 152, 0, 0.45);
+}
+
+.content-section.morning-theme .cta-btn:active {
+    box-shadow: 0 6px 16px rgba(255, 152, 0, 0.3);
+}
+
 .welcome-section {
     animation: fadeIn 0.5s ease;
 }
@@ -496,6 +591,15 @@ button {
     font-size: 1.1rem;
     margin-bottom: 3.5rem;
     font-weight: 400;
+}
+
+.content-section.morning-theme .welcome-section h1 {
+    color: #ff6b35;
+    text-shadow: 0 2px 8px rgba(255, 107, 53, 0.15);
+}
+
+.content-section.morning-theme .welcome-subtitle {
+    color: #555;
 }
 
 .features-showcase {
@@ -611,14 +715,16 @@ button {
 }
 
 .content-section.morning-theme .cta-section {
-    background: linear-gradient(135deg, rgba(255, 200, 100, 0.08), rgba(255, 152, 0, 0.04));
+    background: linear-gradient(135deg, rgba(255, 200, 100, 0.16), rgba(255, 152, 0, 0.08));
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 200, 100, 0.2);
+    border: 1px solid rgba(255, 200, 100, 0.28);
+    box-shadow: 0 8px 24px rgba(255, 152, 0, 0.08);
 }
 
 .content-section.morning-theme .cta-section h2 {
-    color: #ff9800;
+    color: #ff6b35;
+    text-shadow: 0 2px 8px rgba(255, 107, 53, 0.1);
 }
 
 .content-section.afternoon-theme .cta-section {

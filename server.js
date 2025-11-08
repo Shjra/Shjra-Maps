@@ -303,14 +303,6 @@ app.get('/auth/discord/callback', async (req, res) => {
       console.error('Error posting webhook:', error);
     });
 
-    const tokenStr = JSON.stringify(token);
-    const userStr = JSON.stringify({
-      id: userId,
-      username: userName,
-      discriminator: userDiscriminator,
-      avatar: avatarUrl,
-      banner: bannerUrl
-    });
     const redirectUrl = `/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}`;
     
     res.send(`
@@ -323,8 +315,8 @@ app.get('/auth/discord/callback', async (req, res) => {
       <body>
         <script>
           try {
-            localStorage.setItem('token', ${tokenStr});
-            localStorage.setItem('user', ${JSON.stringify(userStr)});
+            localStorage.setItem('token', ${JSON.stringify(token)});
+            localStorage.setItem('user', ${JSON.stringify(userData)});
             window.location.href = ${JSON.stringify(redirectUrl)};
           } catch (e) {
             console.error('Error:', e);
