@@ -625,7 +625,11 @@ function renderProducts() {
                 </ul>
                 <div class="product-footer">
                     <div>${priceHtml}</div>
-                    <button class="btn-compra" onclick="event.stopPropagation(); openPurchaseFromCard(${product.id})">Acquista</button>
+                    <div class="product-actions">
+                        <button class="btn-compra" onclick="event.stopPropagation(); addToCartFromCard(${product.id})">🛒 Carrello</button>
+                        <button class="btn-compra btn-pay" onclick="event.stopPropagation(); openPurchaseFromCard(${product.id})">💳 Paga</button>
+                        <button class="btn-wishlist-quick ${WishlistManager.isInWishlist(product.id) ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlistQuick(${product.id})">❤️</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -649,7 +653,21 @@ function openProductModal(product) {
     document.getElementById('modal-product-name').textContent = product.name;
     document.getElementById('modal-product-type').textContent = product.type;
     document.getElementById('modal-product-description').textContent = product.description;
-    document.getElementById('modal-product-price').textContent = `€${parseFloat(product.price).toFixed(2)}`;
+    
+    const discount = product.discount || 0;
+    const finalPrice = discount > 0 
+        ? (parseFloat(product.price) * (1 - discount / 100)).toFixed(2)
+        : parseFloat(product.price).toFixed(2);
+    
+    if (discount > 0) {
+        document.getElementById('modal-product-price').innerHTML = `
+            <span style="text-decoration: line-through; color: #999;">€${parseFloat(product.price).toFixed(2)}</span>
+            <span style="color: #e74c3c; font-weight: bold;">€${finalPrice}</span>
+            <span style="color: #27ae60; font-size: 0.9rem;"> -${discount}%</span>
+        `;
+    } else {
+        document.getElementById('modal-product-price').textContent = `€${finalPrice}`;
+    }
     
     const featuresContainer = document.getElementById('modal-product-features');
     featuresContainer.innerHTML = `
@@ -658,6 +676,15 @@ function openProductModal(product) {
         </ul>
     `;
     
+    const wishlistBtn = document.getElementById('modal-wishlist-btn');
+    if (WishlistManager.isInWishlist(product.id)) {
+        wishlistBtn.style.background = 'rgba(231, 76, 60, 0.2)';
+        wishlistBtn.style.color = '#e74c3c';
+    } else {
+        wishlistBtn.style.background = '';
+        wishlistBtn.style.color = '';
+    }
+    
     document.getElementById('product-modal').classList.add('show');
 }
 
@@ -665,6 +692,15 @@ function closeProductModal() {
     playSound('click');
     const modal = document.getElementById('product-modal');
     modal.classList.remove('show');
+}
+
+function addToCartFromCard(productId) {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+        CartManager.addToCart(product);
+        showToast(`${product.name} aggiunto al carrello ✅`, 'success');
+        playSound('success');
+    }
 }
 
 function openPurchaseFromCard(productId) {
@@ -721,6 +757,95 @@ function purchaseViaPayPal() {
     setTimeout(() => {
         closePurchaseModal();
     }, 500);
+}
+
+function purchaseViaDiscordFromModal() {
+    playSound('success');
+    triggerConfetti();
+    showToast('🎉 Acquisto avviato! Unisciti al nostro Discord', 'success');
+    window.open('https://discord.gg/jC7e3Rrs3z', '_blank');
+    setTimeout(() => {
+        closeProductModal();
+    }, 500);
+}
+
+function purchaseViaPayPalFromModal() {
+    playSound('success');
+    
+    if (!currentProduct || !currentUser) {
+        showToast('Errore: Prodotto o utente non trovato', 'error');
+        return;
+    }
+    
+    const productName = currentProduct.name;
+    const productPrice = parseFloat(currentProduct.price);
+    const discount = currentProduct.discount || 0;
+    const finalPrice = (productPrice * (1 - discount / 100)).toFixed(2);
+    const discordId = currentUser.id;
+    const discordUsername = currentUser.username;
+    
+    const description = `Acquisto: ${productName} - ID Discord: ${discordId} (${discordUsername})`;
+    const paypalLink = `https://www.paypal.com/paypalme/seantoppe00/${finalPrice}?message=${encodeURIComponent(description)}`;
+    
+    triggerConfetti();
+    showToast('🎉 Pagamento avviato via PayPal', 'success');
+    window.open(paypalLink, '_blank');
+    setTimeout(() => {
+        closeProductModal();
+    }, 500);
+}
+
+function addToCartFromModal() {
+    if (!currentProduct) {
+        showToast('Errore: Prodotto non trovato', 'error');
+        return;
+    }
+    CartManager.addToCart(currentProduct);
+    showToast(`${currentProduct.name} aggiunto al carrello ✅`, 'success');
+    playSound('success');
+    closeProductModal();
+}
+
+function toggleWishlistFromModal() {
+    if (!currentProduct) {
+        showToast('Errore: Prodotto non trovato', 'error');
+        return;
+    }
+    
+    if (WishlistManager.isInWishlist(currentProduct.id)) {
+        WishlistManager.removeFromWishlist(currentProduct.id);
+        showToast(`${currentProduct.name} rimosso dalla wishlist`, 'info');
+    } else {
+        WishlistManager.addToWishlist(currentProduct);
+        showToast(`${currentProduct.name} aggiunto alla wishlist ❤️`, 'success');
+    }
+    
+    playSound('click');
+    
+    const wishlistBtn = document.getElementById('modal-wishlist-btn');
+    if (WishlistManager.isInWishlist(currentProduct.id)) {
+        wishlistBtn.style.background = 'rgba(231, 76, 60, 0.2)';
+        wishlistBtn.style.color = '#e74c3c';
+    } else {
+        wishlistBtn.style.background = '';
+        wishlistBtn.style.color = '';
+    }
+}
+
+function toggleWishlistQuick(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    if (WishlistManager.isInWishlist(productId)) {
+        WishlistManager.removeFromWishlist(productId);
+        showToast(`${product.name} rimosso dalla wishlist`, 'info');
+    } else {
+        WishlistManager.addToWishlist(product);
+        showToast(`${product.name} aggiunto alla wishlist ❤️`, 'success');
+    }
+    
+    playSound('click');
+    renderProducts();
 }
 
 window.addEventListener('load', async function() {

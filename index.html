@@ -326,7 +326,12 @@
                 <div class="modal-features" id="modal-product-features"></div>
                 <div class="modal-footer">
                     <span class="modal-price" id="modal-product-price"></span>
-                    <button class="btn-compra" id="modal-purchase-btn" onclick="showPurchaseOptions()">Acquista Ora</button>
+                    <div class="modal-purchase-actions">
+                        <button class="btn-compra btn-discord" onclick="purchaseViaDiscordFromModal()" title="Acquista via Discord">💬 Discord</button>
+                        <button class="btn-compra btn-paypal" onclick="purchaseViaPayPalFromModal()" title="Acquista via PayPal">💳 PayPal</button>
+                        <button class="btn-wishlist-modal" onclick="toggleWishlistFromModal()" id="modal-wishlist-btn" title="Aggiungi/Rimuovi dalla wishlist">❤️ Wishlist</button>
+                    </div>
+                    <button class="btn-cart-add" onclick="addToCartFromModal()" title="Aggiungi al carrello">🛒 Aggiungi al Carrello</button>
                 </div>
             </div>
         </div>
