@@ -91,7 +91,10 @@ async function saveProducts(productsData) {
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://shjra-maps.onrender.com/auth/discord/callback';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' || process.env.KOYEB === 'true';
+const DISCORD_REDIRECT_URI = isProduction 
+  ? (process.env.DISCORD_REDIRECT_URI_PROD || 'https://shjra-maps.onrender.com/auth/discord/callback')
+  : (process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback');
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PRODUCTS_WEBHOOK_URL = process.env.PRODUCTS_WEBHOOK_URL;
 const ADMIN_ID = '1100354997738274858';
