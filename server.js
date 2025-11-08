@@ -320,9 +320,8 @@ app.get('/auth/discord/callback', async (req, res) => {
       }]
     };
 
-    // Skip webhook during callback to avoid rate limiting
-    // Webhook will be sent separately after successful authentication
-    if (WEBHOOK_URL && false) {
+    // Send webhook login notification
+    if (WEBHOOK_URL) {
       axios.post(WEBHOOK_URL, embedPayload).catch((error) => {
         console.error('Error posting webhook:', error);
       });
