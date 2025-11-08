@@ -131,14 +131,8 @@ function updateWishlistBadge() {
 
 const ThemeManager = {
   init() {
-    const savedTheme = localStorage.getItem('theme-mode');
-    if (savedTheme === 'manual') {
-      const savedThemeType = localStorage.getItem('theme-type');
-      this.setTheme(savedThemeType || 'morning');
-    } else {
-      this.applyAutoTheme();
-      this.setupAutoThemeInterval();
-    }
+    this.applyAutoTheme();
+    this.setupAutoThemeInterval();
   },
   
   getTimeBasedTheme() {
@@ -172,23 +166,15 @@ const ThemeManager = {
     }, 60000);
   },
   
-  toggleManualTheme() {
-    const currentMode = localStorage.getItem('theme-mode');
-    if (currentMode === 'manual') {
-      localStorage.setItem('theme-mode', 'auto');
-      this.applyAutoTheme();
+  toggleLightDarkMode() {
+    const isLight = document.body.classList.contains('light-mode');
+    if (isLight) {
+      document.body.classList.remove('light-mode');
+      localStorage.setItem('light-mode', 'false');
     } else {
-      localStorage.setItem('theme-mode', 'manual');
+      document.body.classList.add('light-mode');
+      localStorage.setItem('light-mode', 'true');
     }
-  },
-  
-  cycleTheme() {
-    const themes = ['light', 'morning', 'afternoon', 'evening', 'dark'];
-    const currentTheme = document.body.className.match(/theme-(\w+)/)?.[1] || 'light';
-    const currentIndex = themes.indexOf(currentTheme);
-    const nextTheme = themes[(currentIndex + 1) % themes.length];
-    localStorage.setItem('theme-mode', 'manual');
-    this.setTheme(nextTheme);
   }
 };
 
@@ -738,9 +724,6 @@ function purchaseViaPayPal() {
 }
 
 window.addEventListener('load', async function() {
-    updateBackgroundTheme();
-    setInterval(updateBackgroundTheme, 60000);
-    
     token = localStorage.getItem('token');
     if (localStorage.getItem('user')) {
         try {
@@ -1433,34 +1416,21 @@ function proceedToCheckout() {
 function initThemeToggle() {
   const themeBtn = document.createElement('button');
   themeBtn.className = 'theme-toggle';
-  themeBtn.title = 'Cicla tra i temi: Normale → Mattina → Pomeriggio → Sera → Scuro';
+  themeBtn.title = 'Attiva/Disattiva modalità chiara';
   
-  const getThemeEmoji = () => {
-    const theme = document.body.className.match(/theme-(\w+)/)?.[1] || 'light';
-    const emojiMap = {
-      'light': '☀️',
-      'morning': '🌅',
-      'afternoon': '🌤️',
-      'evening': '🌆',
-      'dark': '🌙'
-    };
-    return emojiMap[theme] || '🎨';
+  const updateButtonState = () => {
+    const isLight = document.body.classList.contains('light-mode');
+    themeBtn.textContent = isLight ? '☀️' : '🌙';
   };
   
-  themeBtn.textContent = getThemeEmoji();
+  updateButtonState();
+  
   themeBtn.onclick = () => {
-    ThemeManager.cycleTheme();
-    themeBtn.textContent = getThemeEmoji();
+    ThemeManager.toggleLightDarkMode();
+    updateButtonState();
     playSound('click');
-    const theme = document.body.className.match(/theme-(\w+)/)?.[1] || 'light';
-    const themeNames = {
-      'light': 'Normale',
-      'morning': 'Mattina 🌅',
-      'afternoon': 'Pomeriggio 🌤️',
-      'evening': 'Sera 🌆',
-      'dark': 'Scuro 🌙'
-    };
-    showToast(`Tema: ${themeNames[theme]}`);
+    const isLight = document.body.classList.contains('light-mode');
+    showToast(isLight ? 'Modalità chiara attivata ☀️' : 'Modalità scura attivata 🌙');
   };
   
   document.body.appendChild(themeBtn);
@@ -1579,11 +1549,4 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initFloatingDiscordBtn();
   initParallax();
-  
-  const originalLoadProducts = window.loadProductsFromAPI;
-  window.loadProductsFromAPI = async function() {
-    showSkeletonLoading();
-    await originalLoadProducts.call(this);
-    initScrollAnimations();
-  };
 });
