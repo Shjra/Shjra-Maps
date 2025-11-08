@@ -185,6 +185,7 @@ async function fetchWithRetry(fn, maxRetries = 5, delayMs = 2000) {
 }
 
 app.get('/auth/discord/callback', async (req, res) => {
+  console.log('=== CALLBACK STARTED ===');
   console.log('Callback reached, code:', req.query.code);
   const code = req.query.code;
 
@@ -213,10 +214,12 @@ app.get('/auth/discord/callback', async (req, res) => {
       timeout: 10000
     };
 
+    console.log('Attempting to fetch token...');
     const tokenResponse = await fetchWithRetry(
       () => axios.post('https://discord.com/api/oauth2/token', params, axiosConfig)
     );
     console.log('Token response status:', tokenResponse.status);
+    console.log('Token fetched successfully');
 
     const accessToken = tokenResponse.data.access_token;
     console.log('Access token obtained');
@@ -330,6 +333,11 @@ app.get('/auth/discord/callback', async (req, res) => {
   } catch (error) {
     const errorData = error.response?.data || error.message;
     const errorStatus = error.response?.status;
+    
+    console.error('=== ERROR IN CALLBACK ===');
+    console.error('Error status:', errorStatus);
+    console.error('Error data:', JSON.stringify(errorData, null, 2));
+    console.error('Full error:', error.toString());
     
     if (errorStatus === 429 || (typeof errorData === 'string' && errorData.includes('1015'))) {
       console.error('Discord rate limited (429/1015):', error.message);
