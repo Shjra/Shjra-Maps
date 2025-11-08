@@ -166,7 +166,7 @@ app.get('/auth/discord', (req, res) => {
   res.redirect(discordAuthUrl);
 });
 
-async function fetchWithRetry(fn, maxRetries = 2, delayMs = 1000) {
+async function fetchWithRetry(fn, maxRetries = 5, delayMs = 2000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -174,8 +174,9 @@ async function fetchWithRetry(fn, maxRetries = 2, delayMs = 1000) {
       if (i === maxRetries - 1) throw error;
       const status = error.response?.status;
       if (status === 429 || status === 503) {
-        console.log(`Retry ${i + 1}/${maxRetries - 1} after ${delayMs}ms due to status ${status}`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        const waitTime = delayMs * (i + 1);
+        console.log(`Retry ${i + 1}/${maxRetries} after ${waitTime}ms due to status ${status}`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       } else {
         throw error;
       }
