@@ -12,6 +12,186 @@ let productsSyncInterval = null;
 let lastProductsHash = null;
 let currentProduct = null;
 
+const CartManager = {
+  init() {
+    const saved = localStorage.getItem('cart');
+    return saved ? JSON.parse(saved) : [];
+  },
+  
+  getCart() {
+    return JSON.parse(localStorage.getItem('cart') || '[]');
+  },
+  
+  addToCart(product) {
+    const cart = this.getCart();
+    const existing = cart.find(item => item.id === product.id);
+    
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ ...product, quantity: 1, addedAt: new Date().toISOString() });
+    }
+    
+    this.saveCart(cart);
+    return cart;
+  },
+  
+  removeFromCart(productId) {
+    let cart = this.getCart();
+    cart = cart.filter(item => item.id !== productId);
+    this.saveCart(cart);
+    return cart;
+  },
+  
+  updateQuantity(productId, quantity) {
+    let cart = this.getCart();
+    const item = cart.find(item => item.id === productId);
+    if (item) {
+      if (quantity <= 0) {
+        cart = cart.filter(item => item.id !== productId);
+      } else {
+        item.quantity = quantity;
+      }
+    }
+    this.saveCart(cart);
+    return cart;
+  },
+  
+  clearCart() {
+    localStorage.removeItem('cart');
+  },
+  
+  saveCart(cart) {
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartBadge();
+  },
+  
+  getTotal() {
+    return this.getCart().reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+};
+
+const WishlistManager = {
+  init() {
+    const saved = localStorage.getItem('wishlist');
+    return saved ? JSON.parse(saved) : [];
+  },
+  
+  getWishlist() {
+    return JSON.parse(localStorage.getItem('wishlist') || '[]');
+  },
+  
+  addToWishlist(product) {
+    let wishlist = this.getWishlist();
+    if (!wishlist.find(item => item.id === product.id)) {
+      wishlist.push({ ...product, addedAt: new Date().toISOString() });
+    }
+    this.saveWishlist(wishlist);
+    return wishlist;
+  },
+  
+  removeFromWishlist(productId) {
+    let wishlist = this.getWishlist();
+    wishlist = wishlist.filter(item => item.id !== productId);
+    this.saveWishlist(wishlist);
+    return wishlist;
+  },
+  
+  isInWishlist(productId) {
+    return this.getWishlist().some(item => item.id === productId);
+  },
+  
+  saveWishlist(wishlist) {
+    localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    updateWishlistBadge();
+  },
+  
+  clearWishlist() {
+    localStorage.removeItem('wishlist');
+  }
+};
+
+function updateCartBadge() {
+  const badge = document.getElementById('cart-badge');
+  if (badge) {
+    const count = CartManager.getCart().length;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline-block' : 'none';
+  }
+}
+
+function updateWishlistBadge() {
+  const badge = document.getElementById('wishlist-badge');
+  if (badge) {
+    const count = WishlistManager.getWishlist().length;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline-block' : 'none';
+  }
+}
+
+const ThemeManager = {
+  init() {
+    const savedTheme = localStorage.getItem('theme-mode');
+    if (savedTheme === 'manual') {
+      const savedThemeType = localStorage.getItem('theme-type');
+      this.setTheme(savedThemeType || 'morning');
+    } else {
+      this.applyAutoTheme();
+      this.setupAutoThemeInterval();
+    }
+  },
+  
+  getTimeBasedTheme() {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 18) return 'afternoon';
+    if (hour >= 18 && hour < 22) return 'evening';
+    return 'dark';
+  },
+  
+  applyAutoTheme() {
+    const theme = this.getTimeBasedTheme();
+    this.setTheme(theme);
+  },
+  
+  setTheme(theme) {
+    document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
+    if (theme !== 'light') {
+      document.body.classList.add(`theme-${theme}`);
+    }
+    localStorage.setItem('theme-type', theme);
+  },
+  
+  setupAutoThemeInterval() {
+    setInterval(() => {
+      const newTheme = this.getTimeBasedTheme();
+      const currentTheme = document.body.className.match(/theme-(\w+)/)?.[1] || 'light';
+      if (newTheme !== currentTheme) {
+        this.applyAutoTheme();
+      }
+    }, 60000);
+  },
+  
+  toggleManualTheme() {
+    const currentMode = localStorage.getItem('theme-mode');
+    if (currentMode === 'manual') {
+      localStorage.setItem('theme-mode', 'auto');
+      this.applyAutoTheme();
+    } else {
+      localStorage.setItem('theme-mode', 'manual');
+    }
+  },
+  
+  cycleTheme() {
+    const themes = ['light', 'morning', 'afternoon', 'evening', 'dark'];
+    const currentTheme = document.body.className.match(/theme-(\w+)/)?.[1] || 'light';
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextTheme = themes[(currentIndex + 1) % themes.length];
+    localStorage.setItem('theme-mode', 'manual');
+    this.setTheme(nextTheme);
+  }
+};
+
 function getAuthHeaders() {
   return token ? {
     'Content-Type': 'application/json',
@@ -225,10 +405,14 @@ function updateUIAfterLogout() {
 
 function updateNavButtons() {
     document.getElementById('nav-prodotti').style.display = isLoggedIn ? 'block' : 'none';
+    document.getElementById('nav-cart').style.display = isLoggedIn ? 'block' : 'none';
+    document.getElementById('nav-wishlist').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-chi-siamo').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-contatti').style.display = isLoggedIn ? 'block' : 'none';
     document.getElementById('nav-staff').style.display = isStaff() ? 'block' : 'none';
     document.getElementById('login-container').style.display = isLoggedIn ? 'none' : 'block';
+    updateCartBadge();
+    updateWishlistBadge();
 }
 
 function isStaff() {
@@ -277,6 +461,15 @@ function updateContentSections() {
                     content.style.display = 'block';
                 }
             });
+            
+            if (section.id === 'prodotti') {
+                const searchFiltersSection = document.getElementById('search-filters-section');
+                if (searchFiltersSection) {
+                    searchFiltersSection.style.display = 'block';
+                    loadFilterOptions();
+                    performSearch(1);
+                }
+            }
         } else {
             lockedMessages.forEach(msg => msg.style.display = 'block');
             hiddenContents.forEach(content => content.style.display = 'none');
@@ -348,6 +541,12 @@ function navigateTo(section) {
             btn.style.display = 'block';
         }
     });
+    
+    if (section === 'carrello') {
+        renderCart();
+    } else if (section === 'wishlist') {
+        renderWishlist();
+    }
 }
 
 function generateProductsHash(productsList) {
@@ -862,26 +1061,409 @@ function showToast(message, type = 'success') {
   playSound(type === 'error' ? 'error' : 'success');
 }
 
-/* ===== THEME TOGGLE ===== */
-function initThemeToggle() {
-  const isDarkMode = localStorage.getItem('darkMode') === 'true';
-  if (isDarkMode) {
-    document.body.classList.add('dark-mode');
+/* ===== SEARCH & FILTERS ===== */
+let currentSearchPage = 1;
+let currentSearchFilters = {};
+
+async function loadFilterOptions() {
+  try {
+    const response = await fetch('/api/products/filters');
+    const data = await response.json();
+    
+    if (data.success && data.filters) {
+      const typeSelect = document.getElementById('type-filter');
+      const badgeSelect = document.getElementById('badge-filter');
+      const maxPriceInput = document.getElementById('max-price');
+      
+      typeSelect.innerHTML = '<option value="">Tutti i tipi</option>';
+      badgeSelect.innerHTML = '<option value="">Tutti i badge</option>';
+      
+      data.filters.types.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        typeSelect.appendChild(option);
+      });
+      
+      data.filters.badges.forEach(badge => {
+        const option = document.createElement('option');
+        option.value = badge;
+        option.textContent = badge;
+        badgeSelect.appendChild(option);
+      });
+      
+      maxPriceInput.value = data.filters.priceRange.max;
+      maxPriceInput.max = data.filters.priceRange.max;
+      
+      attachFilterListeners();
+    }
+  } catch (error) {
+    console.error('Error loading filters:', error);
   }
-  
-  const themeBtn = document.createElement('button');
-  themeBtn.className = 'theme-toggle';
-  themeBtn.textContent = isDarkMode ? '☀️' : '🌙';
-  themeBtn.onclick = toggleTheme;
-  document.body.appendChild(themeBtn);
 }
 
-function toggleTheme() {
-  const isDark = document.body.classList.toggle('dark-mode');
-  localStorage.setItem('darkMode', isDark);
-  document.querySelector('.theme-toggle').textContent = isDark ? '☀️' : '🌙';
+function attachFilterListeners() {
+  const searchInput = document.getElementById('search-input');
+  const typeFilter = document.getElementById('type-filter');
+  const badgeFilter = document.getElementById('badge-filter');
+  const minPrice = document.getElementById('min-price');
+  const maxPrice = document.getElementById('max-price');
+  const sortFilter = document.getElementById('sort-filter');
+  const discountOnly = document.getElementById('discount-only');
+  
+  const debounceSearch = (fn, delay) => {
+    let timeoutId;
+    return function(...args) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn(...args), delay);
+    };
+  };
+  
+  const delayedSearch = debounceSearch(() => performSearch(1), 500);
+  
+  searchInput?.addEventListener('input', delayedSearch);
+  typeFilter?.addEventListener('change', () => performSearch(1));
+  badgeFilter?.addEventListener('change', () => performSearch(1));
+  minPrice?.addEventListener('change', () => performSearch(1));
+  maxPrice?.addEventListener('change', () => performSearch(1));
+  sortFilter?.addEventListener('change', () => performSearch(1));
+  discountOnly?.addEventListener('change', () => performSearch(1));
+}
+
+function toggleFiltersPanel() {
+  const filtersContent = document.getElementById('filters-content');
+  filtersContent.style.display = filtersContent.style.display === 'none' ? 'block' : 'none';
+}
+
+async function performSearch(page = 1) {
+  try {
+    showSkeletonLoading();
+    currentSearchPage = page;
+    
+    const query = document.getElementById('search-input')?.value || '';
+    const type = document.getElementById('type-filter')?.value || '';
+    const badge = document.getElementById('badge-filter')?.value || '';
+    const minPrice = document.getElementById('min-price')?.value || 0;
+    const maxPrice = document.getElementById('max-price')?.value || 999999;
+    const sort = document.getElementById('sort-filter')?.value || 'name';
+    const discountOnly = document.getElementById('discount-only')?.checked || false;
+    
+    currentSearchFilters = { query, type, badge, minPrice, maxPrice, sort, discountOnly };
+    
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (type) params.append('type', type);
+    params.append('minPrice', minPrice);
+    params.append('maxPrice', maxPrice);
+    if (badge) params.append('badge', badge);
+    if (discountOnly) params.append('discountOnly', 'true');
+    params.append('sort', sort);
+    params.append('page', page);
+    params.append('limit', 12);
+    
+    const response = await fetch(`/api/products/search?${params.toString()}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      displaySearchResults(data.products, data.pagination);
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    showToast('Errore nella ricerca', 'error');
+  } finally {
+    hideSkeletonLoading();
+  }
+}
+
+function displaySearchResults(products, pagination) {
+  const grid = document.getElementById('products-grid');
+  grid.innerHTML = '';
+  
+  if (products.length === 0) {
+    grid.innerHTML = '<div class="search-results-info" style="grid-column: 1/-1; text-align: center;">Nessun prodotto trovato con i filtri selezionati</div>';
+    renderPagination(pagination);
+    return;
+  }
+  
+  const resultsInfo = document.createElement('div');
+  resultsInfo.className = 'search-results-info';
+  resultsInfo.style.gridColumn = '1 / -1';
+  resultsInfo.textContent = `Trovati ${pagination.total} risultati (pagina ${pagination.page} di ${pagination.totalPages})`;
+  grid.appendChild(resultsInfo);
+  
+  products.forEach(product => {
+    const card = createProductCard(product);
+    grid.appendChild(card);
+  });
+  
+  renderPagination(pagination);
+}
+
+function renderPagination(pagination) {
+  let paginationHtml = '<div class="pagination">';
+  
+  if (pagination.page > 1) {
+    paginationHtml += `<button onclick="performSearch(1)">« Prima</button>`;
+    paginationHtml += `<button onclick="performSearch(${pagination.page - 1})">‹ Precedente</button>`;
+  }
+  
+  const startPage = Math.max(1, pagination.page - 2);
+  const endPage = Math.min(pagination.totalPages, pagination.page + 2);
+  
+  if (startPage > 1) {
+    paginationHtml += '<span>...</span>';
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    if (i === pagination.page) {
+      paginationHtml += `<span class="active">${i}</span>`;
+    } else {
+      paginationHtml += `<button onclick="performSearch(${i})">${i}</button>`;
+    }
+  }
+  
+  if (endPage < pagination.totalPages) {
+    paginationHtml += '<span>...</span>';
+  }
+  
+  if (pagination.page < pagination.totalPages) {
+    paginationHtml += `<button onclick="performSearch(${pagination.page + 1})">Successivo ›</button>`;
+    paginationHtml += `<button onclick="performSearch(${pagination.totalPages})">Ultima »</button>`;
+  }
+  
+  paginationHtml += '</div>';
+  
+  const paginationDiv = document.createElement('div');
+  paginationDiv.innerHTML = paginationHtml;
+  document.getElementById('products-grid').appendChild(paginationDiv);
+}
+
+function resetFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('type-filter').value = '';
+  document.getElementById('badge-filter').value = '';
+  document.getElementById('min-price').value = 0;
+  document.getElementById('discount-only').checked = false;
+  document.getElementById('sort-filter').value = 'name';
+  
+  fetch('/api/products/filters')
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('max-price').value = data.filters.priceRange.max;
+      }
+    });
+  
+  performSearch(1);
+  showToast('Filtri resettati');
+}
+
+function initLazyLoading() {
+  if (!('IntersectionObserver' in window)) return;
+  
+  const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        img.style.backgroundImage = img.dataset.src;
+        img.classList.add('loaded');
+        observer.unobserve(img);
+      }
+    });
+  });
+  
+  document.querySelectorAll('[data-src]').forEach(img => imageObserver.observe(img));
+}
+
+function createProductCard(product) {
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  
+  const imageUrl = product.image || `linear-gradient(135deg, ${product.color || '#667eea'}, ${product.color2 || '#764ba2'})`;
+  const imageStyle = imageUrl.startsWith('linear-gradient') ? `background: ${imageUrl}` : `background-image: url(${imageUrl}); background-size: cover; background-position: center;`;
+  
+  let badgeHtml = '';
+  if (product.badge) {
+    badgeHtml = `<span class="badge badge-${product.badge.toLowerCase()}">${product.badge}</span>`;
+  }
+  
+  let discountHtml = '';
+  if (product.discount && product.discount > 0) {
+    const originalPrice = product.price;
+    const discountedPrice = (originalPrice * (1 - product.discount / 100)).toFixed(2);
+    discountHtml = `
+      <div class="pricing-section">
+        <span class="original-price">€${originalPrice.toFixed(2)}</span>
+        <span class="sale-price">€${discountedPrice}</span>
+        <span class="discount-badge">-${product.discount}%</span>
+      </div>
+    `;
+  }
+  
+  card.innerHTML = `
+    <div class="product-image" style="${imageStyle}">
+      ${badgeHtml}
+    </div>
+    <div class="product-content">
+      <h3>${product.name}</h3>
+      <p class="map-type">${product.type || 'N/A'}</p>
+      <p>${product.description.substring(0, 100)}${product.description.length > 100 ? '...' : ''}</p>
+      <ul class="features">
+        ${(product.features || []).slice(0, 3).map(f => `<li>${f}</li>`).join('')}
+      </ul>
+      <div class="product-footer">
+        ${discountHtml || `<span class="price">€${product.price.toFixed(2)}</span>`}
+        <div class="product-actions">
+          <button class="btn-compra" onclick="openProductModal('${product.id}')">Dettagli</button>
+          <button class="btn-cart" title="Aggiungi al carrello" onclick="addToCartQuick(${JSON.stringify(product)})">🛒</button>
+          <button class="btn-wishlist ${WishlistManager.isInWishlist(product.id) ? 'active' : ''}" title="Aggiungi a wishlist" onclick="toggleWishlist(${JSON.stringify(product)})">❤️</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  return card;
+}
+
+/* ===== CART & WISHLIST ===== */
+function addToCartQuick(product) {
+  CartManager.addToCart(product);
+  showToast(`${product.name} aggiunto al carrello ✅`, 'success');
+  playSound('success');
+}
+
+function toggleWishlist(product) {
+  if (WishlistManager.isInWishlist(product.id)) {
+    WishlistManager.removeFromWishlist(product.id);
+    showToast(`${product.name} rimosso dalla wishlist`, 'info');
+  } else {
+    WishlistManager.addToWishlist(product);
+    showToast(`${product.name} aggiunto alla wishlist ❤️`, 'success');
+  }
   playSound('click');
-  showToast(isDark ? '🌙 Dark mode attivato' : '☀️ Light mode attivato');
+}
+
+function renderCart() {
+  const cartContent = document.getElementById('cart-content');
+  const cartItems = document.getElementById('cart-items');
+  const cartSummary = document.getElementById('cart-summary');
+  
+  if (!isLoggedIn) {
+    cartContent.style.display = 'none';
+    return;
+  }
+  
+  cartContent.style.display = 'block';
+  const cart = CartManager.getCart();
+  
+  if (cart.length === 0) {
+    cartItems.innerHTML = '<div class="empty-state">Il tuo carrello è vuoto 🛒</div>';
+    cartSummary.innerHTML = '';
+    return;
+  }
+  
+  cartItems.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="cart-item-info">
+        <h4>${item.name}</h4>
+        <p>€${item.price.toFixed(2)} x <input type="number" min="1" value="${item.quantity}" onchange="CartManager.updateQuantity(${item.id}, this.value); renderCart()" style="width: 50px;"></p>
+      </div>
+      <div class="cart-item-total">€${(item.price * item.quantity).toFixed(2)}</div>
+      <button class="btn-remove" onclick="CartManager.removeFromCart(${item.id}); renderCart()">🗑️</button>
+    </div>
+  `).join('');
+  
+  const total = CartManager.getTotal();
+  cartSummary.innerHTML = `
+    <div class="cart-summary-content">
+      <h3>Totale: €${total.toFixed(2)}</h3>
+      <button class="btn-checkout" onclick="proceedToCheckout()">Procedi al pagamento</button>
+      <button class="btn-continue" onclick="navigateTo('prodotti')">Continua shopping</button>
+      <button class="btn-clear-cart" onclick="if(confirm('Svuotare il carrello?')) { CartManager.clearCart(); renderCart(); }">Svuota carrello</button>
+    </div>
+  `;
+}
+
+function renderWishlist() {
+  const wishlistContent = document.getElementById('wishlist-content');
+  const wishlistGrid = document.getElementById('wishlist-grid');
+  
+  if (!isLoggedIn) {
+    wishlistContent.style.display = 'none';
+    return;
+  }
+  
+  wishlistContent.style.display = 'block';
+  const wishlist = WishlistManager.getWishlist();
+  
+  if (wishlist.length === 0) {
+    wishlistGrid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; text-align: center;">La tua wishlist è vuota ❤️</div>';
+    return;
+  }
+  
+  wishlistGrid.innerHTML = wishlist.map(product => `
+    <div class="wishlist-item product-card">
+      <div class="product-image" style="background: ${product.color || '#667eea'}"></div>
+      <div class="product-content">
+        <h3>${product.name}</h3>
+        <p class="map-type">${product.type}</p>
+        <p>€${product.price.toFixed(2)}</p>
+        <div class="product-footer">
+          <button class="btn-compra" onclick="addToCartQuick(${JSON.stringify(product)})">Aggiungi al carrello</button>
+          <button class="btn-remove" onclick="WishlistManager.removeFromWishlist(${product.id}); renderWishlist()">Rimuovi</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function proceedToCheckout() {
+  const cart = CartManager.getCart();
+  if (cart.length === 0) {
+    showToast('Carrello vuoto', 'error');
+    return;
+  }
+  
+  const total = CartManager.getTotal();
+  showToast(`Totale: €${total.toFixed(2)} - Contattaci su Discord per completare l'acquisto!`, 'info');
+  window.open('https://discord.gg/jC7e3Rrs3z', '_blank');
+}
+
+/* ===== THEME TOGGLE ===== */
+function initThemeToggle() {
+  const themeBtn = document.createElement('button');
+  themeBtn.className = 'theme-toggle';
+  themeBtn.title = 'Cicla tra i temi: Normale → Mattina → Pomeriggio → Sera → Scuro';
+  
+  const getThemeEmoji = () => {
+    const theme = document.body.className.match(/theme-(\w+)/)?.[1] || 'light';
+    const emojiMap = {
+      'light': '☀️',
+      'morning': '🌅',
+      'afternoon': '🌤️',
+      'evening': '🌆',
+      'dark': '🌙'
+    };
+    return emojiMap[theme] || '🎨';
+  };
+  
+  themeBtn.textContent = getThemeEmoji();
+  themeBtn.onclick = () => {
+    ThemeManager.cycleTheme();
+    themeBtn.textContent = getThemeEmoji();
+    playSound('click');
+    const theme = document.body.className.match(/theme-(\w+)/)?.[1] || 'light';
+    const themeNames = {
+      'light': 'Normale',
+      'morning': 'Mattina 🌅',
+      'afternoon': 'Pomeriggio 🌤️',
+      'evening': 'Sera 🌆',
+      'dark': 'Scuro 🌙'
+    };
+    showToast(`Tema: ${themeNames[theme]}`);
+  };
+  
+  document.body.appendChild(themeBtn);
 }
 
 /* ===== FLOATING DISCORD BUTTON ===== */
@@ -993,6 +1575,7 @@ function renderProductWithBadges(product) {
 
 /* ===== INIT ALL ===== */
 document.addEventListener('DOMContentLoaded', () => {
+  ThemeManager.init();
   initThemeToggle();
   initFloatingDiscordBtn();
   initParallax();

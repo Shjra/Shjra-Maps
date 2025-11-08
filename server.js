@@ -93,7 +93,28 @@ const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PRODUCTS_WEBHOOK_URL = process.env.PRODUCTS_WEBHOOK_URL;
 const ADMIN_ID = '1100354997738274858';
 
-async function logProductAction(action, product, user) {
+function getClientIP(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() || 
+         req.headers['x-real-ip'] || 
+         req.socket.remoteAddress || 
+         'Unknown';
+}
+
+function formatTimestamp(date = new Date()) {
+  const options = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'Europe/Rome'
+  };
+  return date.toLocaleString('it-IT', options);
+}
+
+async function logProductAction(action, product, user, req = null) {
   try {
     const actionEmoji = {
       'add': '✅',
@@ -113,38 +134,75 @@ async function logProductAction(action, product, user) {
       'delete': 0xff0000
     }[action] || 0x7289da;
 
+    const clientIP = req ? getClientIP(req) : 'API Call';
+    const userAgent = req?.headers['user-agent'] || 'Unknown';
+    const timestamp = formatTimestamp();
+
+    const fields = [
+      {
+        name: '👤 Utente',
+        value: user.discriminator ? `${user.username}#${user.discriminator}` : user.username,
+        inline: true
+      },
+      {
+        name: '🆔 ID Prodotto',
+        value: product.id.toString(),
+        inline: true
+      },
+      {
+        name: '💰 Prezzo',
+        value: `€${product.price}`,
+        inline: true
+      },
+      {
+        name: '📝 Tipo',
+        value: product.type || 'N/A',
+        inline: true
+      },
+      {
+        name: '📄 Descrizione',
+        value: product.description.substring(0, 100) + (product.description.length > 100 ? '...' : ''),
+        inline: false
+      },
+      {
+        name: '🌐 Info Connessione',
+        value: `IP: \`${clientIP}\``,
+        inline: true
+      },
+      {
+        name: '⏰ Timestamp',
+        value: `\`${timestamp}\``,
+        inline: true
+      },
+      {
+        name: '📱 User-Agent',
+        value: `\`${userAgent.substring(0, 80)}${userAgent.length > 80 ? '...' : ''}\``,
+        inline: false
+      }
+    ];
+
+    if (product.badge) {
+      fields.push({
+        name: '🏷️ Badge',
+        value: product.badge,
+        inline: true
+      });
+    }
+
+    if (product.discount) {
+      fields.push({
+        name: '💸 Sconto',
+        value: `${product.discount}%`,
+        inline: true
+      });
+    }
+
     const embedPayload = {
       embeds: [{
         title: `${actionEmoji} ${actionText}`,
         description: `Prodotto: **${product.name}**`,
         color: color,
-        fields: [
-          {
-            name: '👤 Utente',
-            value: user.discriminator ? `${user.username}#${user.discriminator}` : user.username,
-            inline: true
-          },
-          {
-            name: '🆔 ID Prodotto',
-            value: product.id.toString(),
-            inline: true
-          },
-          {
-            name: '💰 Prezzo',
-            value: `€${product.price}`,
-            inline: true
-          },
-          {
-            name: '📝 Tipo',
-            value: product.type || 'N/A',
-            inline: true
-          },
-          {
-            name: '📄 Descrizione',
-            value: product.description.substring(0, 100) + (product.description.length > 100 ? '...' : ''),
-            inline: false
-          }
-        ],
+        fields: fields,
         timestamp: new Date().toISOString(),
         footer: {
           text: 'Shjra Maps - Product Logs'
@@ -261,15 +319,9 @@ app.get('/auth/discord/callback', async (req, res) => {
 
     const token = jwt.sign(userData, JWT_SECRET, { expiresIn: '7d' });
 
-    const now = new Date();
-    const formattedDate = now.toLocaleString('it-IT', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
+    const clientIP = getClientIP(req);
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const timestamp = formatTimestamp();
 
     const embedPayload = {
       embeds: [{
@@ -288,12 +340,28 @@ app.get('/auth/discord/callback', async (req, res) => {
             inline: true
           },
           {
-            name: "📅 Data e Ora",
-            value: formattedDate,
+            name: "⏰ Timestamp",
+            value: `\`${timestamp}\``,
+            inline: true
+          },
+          {
+            name: "🌐 Info Connessione",
+            value: `IP: \`${clientIP}\``,
+            inline: true
+          },
+          {
+            name: "📱 User-Agent",
+            value: `\`${userAgent.substring(0, 80)}${userAgent.length > 80 ? '...' : ''}\``,
             inline: false
           }
         ],
-        timestamp: new Date().toISOString()
+        thumbnail: {
+          url: avatarUrl
+        },
+        timestamp: new Date().toISOString(),
+        footer: {
+          text: 'Shjra Maps - Login Logs'
+        }
       }]
     };
 
@@ -420,6 +488,125 @@ app.get('/api/products', async (req, res) => {
   res.json({ success: true, products });
 });
 
+app.get('/api/products/filters', async (req, res) => {
+  try {
+    const productsCollection = db.collection('products');
+    
+    const allProducts = await productsCollection.find({}).toArray();
+    
+    const types = [...new Set(allProducts.map(p => p.type).filter(Boolean))];
+    const badges = [...new Set(allProducts.map(p => p.badge).filter(Boolean))];
+    const prices = allProducts.map(p => p.price).filter(p => !isNaN(p));
+    
+    const minPrice = Math.min(...prices, 0);
+    const maxPrice = Math.max(...prices, 1000);
+    
+    res.json({
+      success: true,
+      filters: {
+        types: types.sort(),
+        badges: badges.sort(),
+        priceRange: {
+          min: Math.floor(minPrice),
+          max: Math.ceil(maxPrice)
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch filters' });
+  }
+});
+
+app.get('/api/products/search', async (req, res) => {
+  try {
+    const productsCollection = db.collection('products');
+    const {
+      q = '',
+      type = '',
+      minPrice = 0,
+      maxPrice = 999999,
+      badge = '',
+      discountOnly = false,
+      sort = 'name',
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const queryLimit = Math.min(parseInt(limit), 100);
+
+    let filter = {
+      price: {
+        $gte: parseFloat(minPrice),
+        $lte: parseFloat(maxPrice)
+      }
+    };
+
+    if (q && q.trim()) {
+      filter.$or = [
+        { name: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+        { type: { $regex: q, $options: 'i' } }
+      ];
+    }
+
+    if (type && type.trim()) {
+      filter.type = type;
+    }
+
+    if (badge && badge.trim()) {
+      filter.badge = badge;
+    }
+
+    if (discountOnly === 'true' || discountOnly === true) {
+      filter.discount = { $gt: 0 };
+    }
+
+    let sortObj = {};
+    switch(sort) {
+      case 'price-asc':
+        sortObj = { price: 1 };
+        break;
+      case 'price-desc':
+        sortObj = { price: -1 };
+        break;
+      case 'discount':
+        sortObj = { discount: -1, price: 1 };
+        break;
+      case 'newest':
+        sortObj = { createdAt: -1 };
+        break;
+      case 'name':
+      default:
+        sortObj = { name: 1 };
+        break;
+    }
+
+    const total = await productsCollection.countDocuments(filter);
+    const products = await productsCollection
+      .find(filter)
+      .sort(sortObj)
+      .skip(skip)
+      .limit(queryLimit)
+      .toArray();
+
+    const totalPages = Math.ceil(total / queryLimit);
+
+    res.json({
+      success: true,
+      products,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: queryLimit,
+        totalPages
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Search failed' });
+  }
+});
+
 function checkAdmin(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
@@ -450,7 +637,7 @@ app.post('/api/products', checkAdmin, async (req, res) => {
     };
     
     await productsCollection.insertOne(newProduct);
-    await logProductAction('add', newProduct, req.user);
+    await logProductAction('add', newProduct, req.user, req);
     
     res.json({ success: true, product: newProduct });
   } catch (error) {
@@ -471,7 +658,7 @@ app.put('/api/products/:id', checkAdmin, async (req, res) => {
     const updatedProduct = { ...product, ...req.body };
     await productsCollection.updateOne({ id: productId }, { $set: updatedProduct });
     
-    await logProductAction('edit', updatedProduct, req.user);
+    await logProductAction('edit', updatedProduct, req.user, req);
     
     res.json({ success: true, product: updatedProduct });
   } catch (error) {
@@ -488,7 +675,7 @@ app.delete('/api/products/:id', checkAdmin, async (req, res) => {
     await productsCollection.deleteOne({ id: productId });
     
     if (deletedProduct) {
-      await logProductAction('delete', deletedProduct, req.user);
+      await logProductAction('delete', deletedProduct, req.user, req);
     }
     
     res.json({ success: true });
@@ -519,6 +706,30 @@ app.patch('/api/products/:id/badge', checkAdmin, async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to update badge' });
+  }
+});
+
+app.get('/api/admin/analytics', checkAdmin, async (req, res) => {
+  try {
+    const productsCollection = db.collection('products');
+    const totalProducts = await productsCollection.countDocuments();
+    const productsWithDiscount = await productsCollection.countDocuments({ discount: { $gt: 0 } });
+    const avgPrice = await productsCollection.aggregate([
+      { $group: { _id: null, avg: { $avg: '$price' } } }
+    ]).toArray();
+    
+    res.json({
+      success: true,
+      analytics: {
+        totalProducts,
+        productsWithDiscount,
+        averagePrice: avgPrice[0]?.avg || 0,
+        serverTime: new Date().toISOString(),
+        environment: process.env.NODE_ENV
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Analytics failed' });
   }
 });
 

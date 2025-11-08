@@ -31,6 +31,8 @@
                 <li id="nav-prodotti" style="display: none;"><button class="nav-btn" id="btn-prodotti" onclick="navigateTo('prodotti')">Prodotti</button></li>
                 <li id="nav-chi-siamo" style="display: none;"><button class="nav-btn" id="btn-chi-siamo" onclick="navigateTo('chi-siamo')">Chi Siamo</button></li>
                 <li id="nav-contatti" style="display: none;"><button class="nav-btn" id="btn-contatti" onclick="navigateTo('contatti')">Contatti</button></li>
+                <li id="nav-cart" style="display: none;"><button class="nav-btn cart-btn" onclick="navigateTo('carrello')">🛒 Carrello <span class="cart-badge" id="cart-badge">0</span></button></li>
+                <li id="nav-wishlist" style="display: none;"><button class="nav-btn wishlist-btn" onclick="navigateTo('wishlist')">❤️ Wishlist <span class="wishlist-badge" id="wishlist-badge">0</span></button></li>
                 <li id="nav-staff" style="display: none;"><button class="nav-btn" id="btn-staff" onclick="navigateTo('staff')" style="color: #ffd700;">⚙️ Staff</button></li>
                 <li id="login-container" style="display: block;">
                     <button class="discord-btn" id="discord-login-btn" onclick="discordLogin()">
@@ -99,6 +101,61 @@
                 <p class="section-subtitle">Mappe professionali, ottimizzate e pronte all'uso</p>
             </div>
             <p class="locked-message">🔒 Accedi per visualizzare i nostri esclusivi prodotti</p>
+            
+            <!-- Search & Filters Section -->
+            <div id="search-filters-section" style="display: none;" class="search-filters-container">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="🔍 Cerca mappe..." class="search-input">
+                    <button class="search-btn" onclick="performSearch()">Cerca</button>
+                </div>
+                
+                <div class="filters-panel">
+                    <button class="filter-toggle" onclick="toggleFiltersPanel()">🔽 Filtri Avanzati</button>
+                    <div class="filters-content" id="filters-content" style="display: none;">
+                        <div class="filter-group">
+                            <label>💰 Prezzo</label>
+                            <div class="price-range">
+                                <input type="number" id="min-price" placeholder="Min" class="price-input" value="0">
+                                <input type="number" id="max-price" placeholder="Max" class="price-input" value="1000">
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>📁 Tipo Mappa</label>
+                            <select id="type-filter" class="filter-select">
+                                <option value="">Tutti i tipi</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>🏷️ Badge</label>
+                            <select id="badge-filter" class="filter-select">
+                                <option value="">Tutti i badge</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>🎯 Ordinamento</label>
+                            <select id="sort-filter" class="filter-select">
+                                <option value="name">Nome (A-Z)</option>
+                                <option value="price-asc">Prezzo (Basso→Alto)</option>
+                                <option value="price-desc">Prezzo (Alto→Basso)</option>
+                                <option value="discount">Maggior Sconto</option>
+                                <option value="newest">Più Recenti</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>
+                                <input type="checkbox" id="discount-only"> Solo Scontate
+                            </label>
+                        </div>
+                        
+                        <button class="reset-filters-btn" onclick="resetFilters()">Reset Filtri</button>
+                    </div>
+                </div>
+            </div>
+            
             <div class="products-grid" id="products-grid" style="display: none;">
                 <div class="product-card">
                     <div class="product-image" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
@@ -295,6 +352,33 @@
                         <button type="submit" class="btn-save">Aggiungi Prodotto</button>
                     </form>
                 </div>
+            </div>
+        </section>
+
+        <!-- Carrello Section -->
+        <section id="carrello" class="content-section">
+            <div class="section-header">
+                <h2>🛒 Il Tuo Carrello</h2>
+                <p class="section-subtitle">Rivedi e gestisci i tuoi articoli</p>
+            </div>
+            <p class="locked-message">🔒 Accedi per visualizzare il carrello</p>
+            <div id="cart-content" style="display: none;">
+                <div class="cart-container">
+                    <div class="cart-items" id="cart-items"></div>
+                    <div class="cart-summary" id="cart-summary"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Wishlist Section -->
+        <section id="wishlist" class="content-section">
+            <div class="section-header">
+                <h2>❤️ La Tua Wishlist</h2>
+                <p class="section-subtitle">Prodotti che ti interessano</p>
+            </div>
+            <p class="locked-message">🔒 Accedi per visualizzare la wishlist</p>
+            <div id="wishlist-content" style="display: none;">
+                <div class="wishlist-grid" id="wishlist-grid"></div>
             </div>
         </section>
     </main>
