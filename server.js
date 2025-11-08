@@ -359,10 +359,55 @@ app.get('/auth/discord/callback', async (req, res) => {
     console.error('Full error:', error.toString());
     
     if (errorStatus === 429 || (typeof errorData === 'string' && errorData.includes('1015'))) {
-      console.error('Discord rate limited (429/1015):', error.message);
-      // Instead of redirecting immediately, wait and retry
-      await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
-      return res.redirect('/auth/discord'); // Redirect back to auth to retry
+      console.error('Discord rate limited (429/1015) - IP is blocked by Cloudflare');
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Server IP Blocked</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+            .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+            h1 { color: #d32f2f; margin-top: 0; }
+            .error-code { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 15px 0; font-family: monospace; color: #c62828; }
+            ol { line-height: 1.8; }
+            a { color: #1976d2; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .status { background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>🔒 Authentication Failed</h1>
+            <p>The server IP has been blocked by Cloudflare.</p>
+            <div class="error-code">Error: Cloudflare 1015 (Access Denied)</div>
+            
+            <div class="status">
+              <strong>⚠️ This is a hosting issue, not your fault!</strong><br>
+              The Render server IP is temporarily blocked by Cloudflare's security system.
+            </div>
+            
+            <h2>How to Fix:</h2>
+            <ol>
+              <li>Go to <strong><a href="https://dashboard.render.com" target="_blank">Render Dashboard</a></strong></li>
+              <li>Click on your <strong>"Maps"</strong> service</li>
+              <li>Go to <strong>Settings</strong> tab</li>
+              <li><strong>Contact Render Support</strong> (bottom of page) with this message:<br>
+                <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">"My app cannot authenticate with Discord API. I'm getting Cloudflare error 1015 (IP blocked). Please either: 1) Change my server IP, or 2) Upgrade me to a dedicated IP"</pre>
+              </li>
+            </ol>
+            
+            <h2>Alternative:</h2>
+            <p>Wait <strong>24 hours</strong> - Cloudflare usually automatically unblocks IPs after a day.</p>
+            
+            <p style="margin-top: 30px; text-align: center;">
+              <a href="/">← Back to Home</a>
+            </p>
+          </div>
+        </body>
+        </html>
+      `);
     }
     
     if (errorStatus >= 500) {
