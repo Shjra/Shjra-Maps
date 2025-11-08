@@ -303,9 +303,12 @@ app.get('/auth/discord/callback', async (req, res) => {
       }]
     };
 
-    axios.post(WEBHOOK_URL, embedPayload).catch((error) => {
-      console.error('Error posting webhook:', error);
-    });
+    // Fire and forget webhook without awaiting
+    if (WEBHOOK_URL) {
+      axios.post(WEBHOOK_URL, embedPayload).catch((error) => {
+        console.error('Error posting webhook:', error);
+      });
+    }
 
     const redirectUrl = `/?login_success=true&username=${encodeURIComponent(userName)}&id=${userId}`;
     
