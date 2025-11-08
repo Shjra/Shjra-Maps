@@ -24,6 +24,8 @@ function getAuthHeaders() {
 function playSound(type) {
   if (!audioContext) return;
   
+  triggerSoundFeedback();
+  
   try {
     const now = audioContext.currentTime;
     
@@ -33,7 +35,7 @@ function playSound(type) {
       osc.type = 'sine';
       osc.connect(gain);
       gain.connect(audioContext.destination);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
       osc.frequency.setValueAtTime(500, now);
       osc.start(now);
@@ -45,7 +47,7 @@ function playSound(type) {
       osc.type = 'sine';
       osc.connect(gain);
       gain.connect(audioContext.destination);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
       osc.frequency.setValueAtTime(650, now);
       osc.start(now);
@@ -57,7 +59,7 @@ function playSound(type) {
       osc.type = 'sine';
       osc.connect(gain);
       gain.connect(audioContext.destination);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
       osc.frequency.setValueAtTime(750, now);
       osc.start(now);
@@ -69,7 +71,7 @@ function playSound(type) {
       osc.type = 'sine';
       osc.connect(gain);
       gain.connect(audioContext.destination);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
       osc.frequency.setValueAtTime(800, now);
       osc.start(now);
@@ -81,15 +83,33 @@ function playSound(type) {
       osc.type = 'sine';
       osc.connect(gain);
       gain.connect(audioContext.destination);
-      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
       osc.frequency.setValueAtTime(300, now);
       osc.start(now);
       osc.stop(now + 0.1);
     }
   } catch (e) {
-    console.error('Sound error:', e);
   }
+}
+
+function triggerSoundFeedback() {
+  const pulse = document.createElement('div');
+  pulse.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(102, 126, 234, 0.8), rgba(102, 126, 234, 0));
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 9999;
+    animation: soundPulse 0.6s ease-out forwards;
+  `;
+  document.body.appendChild(pulse);
+  setTimeout(() => pulse.remove(), 600);
 }
 
 function copyEmail() {
@@ -350,7 +370,6 @@ async function loadProductsFromAPI() {
             }
         }
     } catch (error) {
-        console.error('Error loading products:', error);
     }
 }
 
@@ -376,7 +395,6 @@ function startProductsSync() {
                 }
             }
         } catch (error) {
-            console.error('Error syncing products:', error);
         }
     }, 3000);
 }
@@ -543,15 +561,11 @@ window.addEventListener('load', async function() {
             }
             
             const headers = getAuthHeaders();
-            console.log('Token from localStorage:', token ? 'present' : 'missing');
-            console.log('Headers:', headers);
             
             const response = await fetch('/api/user', {
                 headers: headers
             });
             const data = await response.json();
-            
-            console.log('API response:', data);
             
             if (data.success && data.user) {
                 isLoggedIn = true;
@@ -559,7 +573,6 @@ window.addEventListener('load', async function() {
                 updateUIAfterLogin();
                 await loadProductsFromAPI();
             } else {
-                console.error('Login failed:', data);
                 token = null;
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
@@ -594,7 +607,6 @@ window.addEventListener('load', async function() {
             await loadProductsFromAPI();
         }
     } catch (error) {
-        console.error('Error checking login status:', error);
         updateUIAfterLogout();
         await loadProductsFromAPI();
     }
@@ -685,7 +697,6 @@ async function addProduct(event) {
             alert('❌ Errore: ' + data.error);
         }
     } catch (error) {
-        console.error('Error adding product:', error);
         alert('❌ Errore nella richiesta');
     }
 }
@@ -759,7 +770,6 @@ async function saveProduct(event) {
             alert('❌ Errore: ' + data.error);
         }
     } catch (error) {
-        console.error('Error saving product:', error);
         alert('❌ Errore nella richiesta');
     }
 }
@@ -784,7 +794,6 @@ async function deleteProduct(productId) {
             alert('❌ Errore: ' + data.error);
         }
     } catch (error) {
-        console.error('Error deleting product:', error);
         alert('❌ Errore nella richiesta');
     }
 }

@@ -40,7 +40,6 @@ function verifyToken(req, res, next) {
     req.user = decoded;
     next();
   } catch (error) {
-    console.error('Token verification failed:', error.message);
     return res.json({ success: false, user: null });
   }
 }
@@ -57,8 +56,6 @@ async function connectDB() {
     
     const productsCollection = db.collection('products');
     await productsCollection.createIndex({ id: 1 });
-    
-    console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
@@ -71,7 +68,6 @@ async function loadProducts() {
     const productsCollection = db.collection('products');
     return await productsCollection.find({}).toArray();
   } catch (error) {
-    console.error('Error loading products:', error);
     return [];
   }
 }
@@ -85,7 +81,6 @@ async function saveProducts(productsData) {
       await productsCollection.insertMany(productsData);
     }
   } catch (error) {
-    console.error('Error saving products:', error);
   }
 }
 
@@ -159,7 +154,6 @@ async function logProductAction(action, product, user) {
 
     await axios.post(PRODUCTS_WEBHOOK_URL, embedPayload);
   } catch (error) {
-    console.error('Error logging product action:', error);
   }
 }
 
@@ -177,7 +171,6 @@ async function fetchWithRetry(fn, maxRetries = 3, delayMs = 5000) {
       const status = error.response?.status;
       if (status === 429 || status === 503 || (typeof error.response?.data === 'string' && error.response.data.includes('1015'))) {
         const waitTime = delayMs * Math.pow(2, i);
-        console.log(`Retry ${i + 1}/${maxRetries} after ${waitTime}ms due to status ${status}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       } else {
         throw error;
@@ -187,12 +180,9 @@ async function fetchWithRetry(fn, maxRetries = 3, delayMs = 5000) {
 }
 
 app.get('/auth/discord/callback', async (req, res) => {
-  console.log('=== CALLBACK STARTED ===');
-  console.log('Callback reached, code:', req.query.code);
   const code = req.query.code;
 
   if (!code) {
-    console.log('No code provided');
     return res.redirect('/?error=No code provided');
   }
 
@@ -204,11 +194,6 @@ app.get('/auth/discord/callback', async (req, res) => {
     params.append('code', code);
     params.append('redirect_uri', DISCORD_REDIRECT_URI);
 
-    console.log('Token request params:', {
-      client_id: DISCORD_CLIENT_ID,
-      redirect_uri: DISCORD_REDIRECT_URI
-    });
-
     const axiosConfig = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -219,20 +204,16 @@ app.get('/auth/discord/callback', async (req, res) => {
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1'
       },
-      timeout: 15000
+      timeout: 10000
     };
 
-    console.log('Attempting to fetch token...');
     const tokenResponse = await fetchWithRetry(
       () => axios.post('https://discord.com/api/oauth2/token', params, axiosConfig),
       5,
       10000
     );
-    console.log('Token response status:', tokenResponse.status);
-    console.log('Token fetched successfully');
 
     const accessToken = tokenResponse.data.access_token;
-    console.log('Access token obtained');
 
     const userResponse = await fetchWithRetry(
       () => axios.get('https://discord.com/api/users/@me', {
@@ -245,14 +226,13 @@ app.get('/auth/discord/callback', async (req, res) => {
           'DNT': '1',
           'Connection': 'keep-alive'
         },
-        timeout: 15000
+        timeout: 10000
       }),
       5,
       10000
     );
 
     const user = userResponse.data;
-    console.log('User data:', { id: user.id, username: user.username });
 
     const userId = user.id;
     const userName = user.username;
@@ -280,9 +260,6 @@ app.get('/auth/discord/callback', async (req, res) => {
     };
 
     const token = jwt.sign(userData, JWT_SECRET, { expiresIn: '7d' });
-
-    console.log('JWT token generated for user:', userId);
-    console.log('Token length:', token.length);
 
     const now = new Date();
     const formattedDate = now.toLocaleString('it-IT', {
@@ -354,13 +331,7 @@ app.get('/auth/discord/callback', async (req, res) => {
     const errorData = error.response?.data || error.message;
     const errorStatus = error.response?.status;
     
-    console.error('=== ERROR IN CALLBACK ===');
-    console.error('Error status:', errorStatus);
-    console.error('Error data:', JSON.stringify(errorData, null, 2));
-    console.error('Full error:', error.toString());
-    
     if (errorStatus === 429 || (typeof errorData === 'string' && errorData.includes('1015'))) {
-      console.error('Discord rate limited (429/1015) - IP is blocked by Cloudflare');
       return res.send(`
         <!DOCTYPE html>
         <html>
@@ -412,11 +383,9 @@ app.get('/auth/discord/callback', async (req, res) => {
     }
     
     if (errorStatus >= 500) {
-      console.error('Discord server error:', errorStatus);
       return res.redirect('/?error=Discord service temporarily unavailable');
     }
     
-    console.error('Error in callback:', errorData);
     res.redirect('/?error=Authentication failed');
   }
 });
@@ -426,13 +395,11 @@ app.get('/api/user', (req, res) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    console.log('No token provided');
     return res.json({ success: false, user: null });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('Token verified for user:', decoded.id);
     res.json({
       success: true,
       user: {
@@ -444,7 +411,6 @@ app.get('/api/user', (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Token verification failed:', error.message);
     res.json({ success: false, user: null });
   }
 });
@@ -470,7 +436,6 @@ function checkAdmin(req, res, next) {
     req.user = decoded;
     next();
   } catch (error) {
-    console.error('Token verification failed:', error.message);
     return res.status(401).json({ success: false, error: 'Invalid token' });
   }
 }
@@ -489,7 +454,6 @@ app.post('/api/products', checkAdmin, async (req, res) => {
     
     res.json({ success: true, product: newProduct });
   } catch (error) {
-    console.error('Error creating product:', error);
     res.status(500).json({ success: false, error: 'Failed to create product' });
   }
 });
@@ -511,7 +475,6 @@ app.put('/api/products/:id', checkAdmin, async (req, res) => {
     
     res.json({ success: true, product: updatedProduct });
   } catch (error) {
-    console.error('Error updating product:', error);
     res.status(500).json({ success: false, error: 'Failed to update product' });
   }
 });
@@ -530,7 +493,6 @@ app.delete('/api/products/:id', checkAdmin, async (req, res) => {
     
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting product:', error);
     res.status(500).json({ success: false, error: 'Failed to delete product' });
   }
 });
@@ -546,22 +508,17 @@ async function initializeApp() {
       const existingCount = await productsCollection.countDocuments();
       
       if (existingCount === 0 && fileProducts.length > 0) {
-        console.log('Migrating products from JSON file to MongoDB...');
         await productsCollection.insertMany(fileProducts);
-        console.log(`Migrated ${fileProducts.length} products`);
       }
     } catch (error) {
-      console.error('Error during migration:', error);
     }
   }
   
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
 initializeApp().catch(error => {
-  console.error('Failed to initialize app:', error);
   process.exit(1);
 });
