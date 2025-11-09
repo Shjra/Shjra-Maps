@@ -488,12 +488,12 @@ function updateUserProfile() {
     const userProfile = document.getElementById('user-profile');
     if (isLoggedIn && currentUser) {
         document.getElementById('user-name').textContent = currentUser.username;
-        
+
         if (currentUser.avatar) {
             document.getElementById('user-avatar').src = currentUser.avatar;
             document.getElementById('profile-avatar').src = currentUser.avatar;
         }
-        
+
         const profileBanner = document.getElementById('profile-banner');
         if (currentUser.banner) {
             if (currentUser.banner.startsWith('#')) {
@@ -506,10 +506,13 @@ function updateUserProfile() {
         } else {
             profileBanner.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
         }
-        
+
         document.getElementById('profile-username').textContent = `${currentUser.username}#${currentUser.discriminator}`;
         document.getElementById('profile-id').textContent = currentUser.id;
-        
+
+        // Load user files for download section
+        loadUserFiles();
+
         userProfile.style.display = 'block';
     } else {
         userProfile.style.display = 'none';
@@ -973,23 +976,28 @@ window.addEventListener('load', async function() {
 function switchStaffTab(tabName) {
     const tabs = document.querySelectorAll('.staff-tab-content');
     const buttons = document.querySelectorAll('.staff-tab');
-    
+
     tabs.forEach(tab => {
         tab.classList.remove('active');
         tab.style.display = 'none';
     });
     buttons.forEach(btn => btn.classList.remove('active'));
-    
+
     const tabId = 'tab-' + tabName;
     const activeTab = document.getElementById(tabId);
     if (activeTab) {
         activeTab.classList.add('active');
         activeTab.style.display = 'block';
     }
-    
+
     const activeBtn = event.target;
     if (activeBtn) {
         activeBtn.classList.add('active');
+    }
+
+    // Load user files if uploads tab is selected
+    if (tabName === 'uploads') {
+        loadUserFilesForStaff();
     }
 }
 
@@ -1427,50 +1435,74 @@ function initLazyLoading() {
 function createProductCard(product) {
   const card = document.createElement('div');
   card.className = 'product-card';
-  
-  const imageUrl = product.image || `linear-gradient(135deg, ${product.color || '#667eea'}, ${product.color2 || '#764ba2'})`;
-  const imageStyle = imageUrl.startsWith('linear-gradient') ? `background: ${imageUrl}` : `background-image: url(${imageUrl}); background-size: cover; background-position: center;`;
-  
-  let badgeHtml = '';
-  if (product.badge) {
-    badgeHtml = `<span class="badge badge-${product.badge.toLowerCase()}">${product.badge}</span>`;
-  }
-  
-  let discountHtml = '';
-  if (product.discount && product.discount > 0) {
-    const originalPrice = product.price;
-    const discountedPrice = (originalPrice * (1 - product.discount / 100)).toFixed(2);
-    discountHtml = `
-      <div class="pricing-section">
-        <span class="original-price">€${originalPrice.toFixed(2)}</span>
-        <span class="sale-price">€${discountedPrice}</span>
-        <span class="discount-badge">-${product.discount}%</span>
-      </div>
-    `;
-  }
-  
+  card.style.cursor = 'pointer';
+  card.style.position = 'relative';
+  card.onclick = () => openProductModal(product);
+
+  const features = typeof product.features === 'string'
+    ? product.features.split('\n').filter(f => f.trim())
+    : (Array.isArray(product.features) ? product.features : []);
+
+  const description = typeof product.description === 'string' ? product.description : '';
+  const truncatedDescription = description.length > 140 ? `${description.substring(0, 140)}...` : description;
+
+  const { badgeHtml, priceHtml } = renderProductWithBadges(product);
+
+  const isHexColor = typeof product.color === 'string' && /^#([0-9A-F]{3}){1,2}$/i.test(product.color);
+  const baseColor = isHexColor ? product.color : '#667eea';
+  const secondaryColor = adjustBrightness(baseColor, -20);
+
+  const imageUrl = product.imageUrl || product.image;
+  const imageStyle = imageUrl
+    ? `background-image: url("${imageUrl}"); background-size: cover; background-position: center;`
+    : `background: linear-gradient(135deg, ${baseColor}, ${secondaryColor}); background-image: url('shjra-logo.png'); background-blend-mode: overlay; background-position: center; background-repeat: no-repeat; background-size: 60%;`;
+
   card.innerHTML = `
-    <div class="product-image" style="${imageStyle}">
-      ${badgeHtml}
-    </div>
+    ${badgeHtml}
+    <div class="product-image" style="${imageStyle}"></div>
     <div class="product-content">
       <h3>${product.name}</h3>
       <p class="map-type">${product.type || 'N/A'}</p>
-      <p>${product.description.substring(0, 100)}${product.description.length > 100 ? '...' : ''}</p>
+      <p>${truncatedDescription}</p>
       <ul class="features">
-        ${(product.features || []).slice(0, 3).map(f => `<li>${f}</li>`).join('')}
+        ${features.slice(0, 3).map(f => `<li>${f}</li>`).join('')}
       </ul>
       <div class="product-footer">
-        ${discountHtml || `<span class="price">€${product.price.toFixed(2)}</span>`}
+        <div>${priceHtml}</div>
         <div class="product-actions">
-          <button class="btn-compra" onclick="openProductModal('${product.id}')">Dettagli</button>
-          <button class="btn-cart" title="Aggiungi al carrello" onclick="addToCartQuick(${JSON.stringify(product)})">🛒</button>
-          <button class="btn-wishlist ${WishlistManager.isInWishlist(product.id) ? 'active' : ''}" title="Aggiungi a wishlist" onclick="toggleWishlist(${JSON.stringify(product)})">❤️</button>
+          <button class="btn-compra">🛒 Carrello</button>
+          <button class="btn-compra btn-pay">💳 Paga</button>
+          <button class="btn-wishlist-quick ${WishlistManager.isInWishlist(product.id) ? 'active' : ''}">❤️</button>
         </div>
       </div>
     </div>
   `;
-  
+
+  const cartBtn = card.querySelector('.btn-compra');
+  if (cartBtn) {
+    cartBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      addToCartQuick(product);
+    });
+  }
+
+  const payBtn = card.querySelector('.btn-pay');
+  if (payBtn) {
+    payBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      openPurchaseQuick(product);
+    });
+  }
+
+  const wishlistBtn = card.querySelector('.btn-wishlist-quick');
+  if (wishlistBtn) {
+    wishlistBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      toggleWishlist(product);
+      wishlistBtn.classList.toggle('active', WishlistManager.isInWishlist(product.id));
+    });
+  }
+
   return card;
 }
 
@@ -1479,6 +1511,12 @@ function addToCartQuick(product) {
   CartManager.addToCart(product);
   showToast(`${product.name} aggiunto al carrello ✅`, 'success');
   playSound('success');
+}
+
+function openPurchaseQuick(product) {
+  const existingProduct = products.find(p => p.id === product.id);
+  currentProduct = existingProduct || product;
+  showPurchaseOptions();
 }
 
 function toggleWishlist(product) {
@@ -1709,10 +1747,170 @@ function renderProductWithBadges(product) {
   return { badgeHtml, priceHtml };
 }
 
+/* ===== FILE UPLOAD FUNCTIONS ===== */
+async function uploadFile(event) {
+    event.preventDefault();
+
+    const fileInput = document.getElementById('file-input');
+    const userIdsInput = document.getElementById('user-ids-input');
+    const uploadBtn = document.getElementById('upload-btn');
+
+    if (!fileInput.files[0]) {
+        showToast('Seleziona un file', 'error');
+        return;
+    }
+
+    if (!userIdsInput.value.trim()) {
+        showToast('Inserisci almeno un ID utente', 'error');
+        return;
+    }
+
+    // Disable button and show loading
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = '⏳ Caricamento...';
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('userIds', userIdsInput.value.trim());
+
+    try {
+        const response = await fetch('/api/files/upload', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('File caricato con successo!', 'success');
+            fileInput.value = '';
+            userIdsInput.value = '';
+            loadUserFilesForStaff();
+        } else {
+            showToast('Errore: ' + data.error, 'error');
+        }
+    } catch (error) {
+        showToast('Errore nel caricamento', 'error');
+    } finally {
+        // Re-enable button
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = '📤 Carica File';
+    }
+}
+
+async function loadUserFiles() {
+    try {
+        const response = await fetch(`/api/files/user/${currentUser.id}`, {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            renderUserFiles(data.files);
+        }
+    } catch (error) {
+        console.error('Error loading user files:', error);
+    }
+}
+
+async function loadUserFilesForStaff() {
+    // Staff can see all files - this could be extended to show all files for admin
+    try {
+        const response = await fetch('/api/files/user/all', {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            renderUserFilesForStaff(data.files);
+        }
+    } catch (error) {
+        console.error('Error loading staff files:', error);
+    }
+}
+
+function renderUserFiles(files) {
+    const downloadSection = document.getElementById('download-section');
+    const filesList = document.getElementById('user-files-list');
+
+    if (files.length === 0) {
+        downloadSection.style.display = 'none';
+        return;
+    }
+
+    downloadSection.style.display = 'block';
+    filesList.innerHTML = '';
+
+    files.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <div class="file-info">
+                <span class="file-name">${file.filename}</span>
+                <span class="file-expiry">Scade: ${new Date(file.expiresAt).toLocaleString('it-IT')}</span>
+            </div>
+            <button class="btn-download" onclick="downloadFile('${file.id}')">📥 Scarica</button>
+        `;
+        filesList.appendChild(fileItem);
+    });
+}
+
+function renderUserFilesForStaff(files) {
+    // For now, just show a simple list - can be enhanced
+    const staffFilesList = document.getElementById('staff-files-list');
+    if (!staffFilesList) {
+        // Create if doesn't exist
+        const uploadsTab = document.getElementById('tab-uploads');
+        const filesList = document.createElement('div');
+        filesList.id = 'staff-files-list';
+        filesList.innerHTML = '<h4>File Caricati Recenti</h4>';
+        uploadsTab.appendChild(filesList);
+    }
+
+    // Simple implementation - can be enhanced
+    console.log('Staff files:', files);
+}
+
+async function downloadFile(fileId) {
+    try {
+        const response = await fetch(`/api/files/download/${fileId}`, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'download'; // Will be overridden by server
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showToast('Download completato!', 'success');
+        } else {
+            const data = await response.json();
+            showToast('Errore: ' + data.error, 'error');
+        }
+    } catch (error) {
+        showToast('Errore nel download', 'error');
+    }
+}
+
 /* ===== INIT ALL ===== */
 document.addEventListener('DOMContentLoaded', () => {
   ThemeManager.init();
   initThemeToggle();
   initFloatingDiscordBtn();
   initParallax();
+
+  // Initialize file upload form
+  const uploadBtn = document.getElementById('upload-btn');
+  if (uploadBtn) {
+    uploadBtn.addEventListener('click', uploadFile);
+  }
 });

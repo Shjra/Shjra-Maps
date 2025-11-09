@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const { MongoClient, ObjectId } = require('mongodb');
+const multer = require('multer');
 
 dotenv.config();
 
@@ -50,12 +51,16 @@ let db = null;
 async function connectDB() {
   try {
     const client = new MongoClient(MONGODB_URI);
-    
+
     await client.connect();
     db = client.db('shjra-maps');
-    
+
     const productsCollection = db.collection('products');
     await productsCollection.createIndex({ id: 1 });
+
+    const userFilesCollection = db.collection('userFiles');
+    await userFilesCollection.createIndex({ userIds: 1 });
+    await userFilesCollection.createIndex({ expiresAt: 1 });
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
@@ -92,6 +97,35 @@ const DISCORD_REDIRECT_URI = isProduction
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PRODUCTS_WEBHOOK_URL = process.env.PRODUCTS_WEBHOOK_URL;
 const ADMIN_ID = '1100354997738274858';
+
+// File upload configuration
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
+    cb(null, uniqueName);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Allow all file types
+  cb(null, true);
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 500 * 1024 * 1024 // 500MB limit
+  }
+});
 
 function getClientIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0].trim() || 
@@ -689,25 +723,149 @@ app.patch('/api/products/:id/badge', checkAdmin, async (req, res) => {
     const productsCollection = db.collection('products');
     const productId = parseInt(req.params.id);
     const { badge, discount } = req.body;
-    
+
     const updateData = {};
     if (badge !== undefined) updateData.badge = badge || null;
     if (discount !== undefined) updateData.discount = discount || 0;
-    
+
     const result = await productsCollection.updateOne(
       { id: productId },
       { $set: updateData }
     );
-    
+
     if (result.matchedCount === 0) {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
-    
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to update badge' });
   }
 });
+
+// File upload endpoints
+app.post('/api/files/upload', checkAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const { userIds } = req.body;
+    if (!userIds || !userIds.trim()) {
+      return res.status(400).json({ success: false, error: 'User IDs are required' });
+    }
+
+    const userIdsArray = userIds.split(',').map(id => id.trim()).filter(id => id);
+    if (userIdsArray.length === 0) {
+      return res.status(400).json({ success: false, error: 'At least one valid user ID is required' });
+    }
+
+    const userFilesCollection = db.collection('userFiles');
+    const fileData = {
+      id: Date.now().toString(),
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      userIds: userIdsArray,
+      uploadTime: new Date(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      uploadedBy: req.user.id
+    };
+
+    await userFilesCollection.insertOne(fileData);
+
+    res.json({
+      success: true,
+      file: {
+        id: fileData.id,
+        filename: fileData.originalName,
+        userIds: fileData.userIds,
+        expiresAt: fileData.expiresAt
+      }
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ success: false, error: 'Upload failed' });
+  }
+});
+
+app.get('/api/files/user/:userId', verifyToken, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const userFilesCollection = db.collection('userFiles');
+
+    const files = await userFilesCollection.find({
+      userIds: userId,
+      expiresAt: { $gt: new Date() }
+    }).toArray();
+
+    res.json({
+      success: true,
+      files: files.map(file => ({
+        id: file.id,
+        filename: file.originalName,
+        uploadTime: file.uploadTime,
+        expiresAt: file.expiresAt
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch files' });
+  }
+});
+
+app.get('/api/files/download/:fileId', verifyToken, async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    const userId = req.user.id;
+    const userFilesCollection = db.collection('userFiles');
+
+    const file = await userFilesCollection.findOne({
+      id: fileId,
+      expiresAt: { $gt: new Date() },
+      $or: [
+        { userIds: userId },
+        { uploadedBy: ADMIN_ID } // Staff can access all files
+      ]
+    });
+
+    if (!file) {
+      return res.status(404).json({ success: false, error: 'File not found or expired' });
+    }
+
+    const filePath = path.join(uploadsDir, file.filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: 'File not found on disk' });
+    }
+
+    res.download(filePath, file.originalName);
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Download failed' });
+  }
+});
+
+// Cleanup expired files
+async function cleanupExpiredFiles() {
+  try {
+    const userFilesCollection = db.collection('userFiles');
+    const expiredFiles = await userFilesCollection.find({
+      expiresAt: { $lt: new Date() }
+    }).toArray();
+
+    for (const file of expiredFiles) {
+      const filePath = path.join(uploadsDir, file.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    await userFilesCollection.deleteMany({
+      expiresAt: { $lt: new Date() }
+    });
+
+    console.log(`Cleaned up ${expiredFiles.length} expired files`);
+  } catch (error) {
+    console.error('Cleanup error:', error);
+  }
+}
 
 app.get('/api/admin/analytics', checkAdmin, async (req, res) => {
   try {
@@ -735,21 +893,26 @@ app.get('/api/admin/analytics', checkAdmin, async (req, res) => {
 
 async function initializeApp() {
   await connectDB();
-  
+
   const productsFile = path.join(__dirname, 'products.json');
   if (fs.existsSync(productsFile)) {
     try {
       const fileProducts = JSON.parse(fs.readFileSync(productsFile, 'utf8'));
       const productsCollection = db.collection('products');
       const existingCount = await productsCollection.countDocuments();
-      
+
       if (existingCount === 0 && fileProducts.length > 0) {
         await productsCollection.insertMany(fileProducts);
       }
     } catch (error) {
     }
   }
-  
+
+  // Start cleanup interval (every hour)
+  setInterval(cleanupExpiredFiles, 60 * 60 * 1000);
+  // Run cleanup on startup
+  cleanupExpiredFiles();
+
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
   });
