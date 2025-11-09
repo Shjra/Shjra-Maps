@@ -1,8 +1,12 @@
+// Preload logo to ensure it loads on first visit
+const logoImg = new Image();
+logoImg.src = 'shjra-logo.png';
+
 let isLoggedIn = false;
 let currentUser = null;
 let token = null;
 
-const audioContext = typeof AudioContext !== 'undefined' ? new AudioContext() : 
+const audioContext = typeof AudioContext !== 'undefined' ? new AudioContext() :
                      typeof webkitAudioContext !== 'undefined' ? new webkitAudioContext() : null;
 
 const ADMIN_ID = '1100354997738274858';
@@ -490,6 +494,9 @@ function updateUserProfile() {
         document.getElementById('user-name').textContent = currentUser.username;
 
         if (currentUser.avatar) {
+            // Preload avatar images
+            const avatarImg = new Image();
+            avatarImg.src = currentUser.avatar;
             document.getElementById('user-avatar').src = currentUser.avatar;
             document.getElementById('profile-avatar').src = currentUser.avatar;
         }
@@ -499,6 +506,9 @@ function updateUserProfile() {
             if (currentUser.banner.startsWith('#')) {
                 profileBanner.style.background = currentUser.banner;
             } else {
+                // Preload banner image
+                const bannerImg = new Image();
+                bannerImg.src = currentUser.banner;
                 profileBanner.style.backgroundImage = `url('${currentUser.banner}')`;
                 profileBanner.style.backgroundSize = 'cover';
                 profileBanner.style.backgroundPosition = 'center';
@@ -618,20 +628,20 @@ function stopProductsSync() {
 function renderProducts() {
     const productsGrid = document.getElementById('products-grid');
     if (!productsGrid) return;
-    
+
     productsGrid.innerHTML = '';
-    
+
     products.forEach(product => {
-        const features = typeof product.features === 'string' 
+        const features = typeof product.features === 'string'
             ? product.features.split('\n').filter(f => f.trim())
             : (Array.isArray(product.features) ? product.features : []);
-        
-        const imageStyle = product.imageUrl 
+
+        const imageStyle = product.imageUrl
             ? `background-image: url('${product.imageUrl}'); background-size: cover; background-position: center;`
             : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)}); background-image: url('shjra-logo.png'); background-blend-mode: overlay; background-position: center; background-repeat: no-repeat; background-size: 60%;`;
-        
+
         const { badgeHtml, priceHtml } = renderProductWithBadges(product);
-        
+
         const card = document.createElement('div');
         card.className = 'product-card';
         card.style.cursor = 'pointer';
@@ -657,6 +667,13 @@ function renderProducts() {
                 </div>
             </div>
         `;
+
+        // Preload product images
+        if (product.imageUrl) {
+            const img = new Image();
+            img.src = product.imageUrl;
+        }
+
         productsGrid.appendChild(card);
     });
 }
@@ -664,25 +681,31 @@ function renderProducts() {
 function openProductModal(product) {
     playSound('click');
     currentProduct = product;
-    
-    const features = typeof product.features === 'string' 
+
+    const features = typeof product.features === 'string'
         ? product.features.split('\n').filter(f => f.trim())
         : (Array.isArray(product.features) ? product.features : []);
-    
-    const imageStyle = product.imageUrl 
+
+    const imageStyle = product.imageUrl
         ? `background-image: url('${product.imageUrl}');`
         : `background: linear-gradient(135deg, ${product.color}, ${adjustBrightness(product.color, -20)}); background-image: url('shjra-logo.png'); background-blend-mode: overlay; background-position: center; background-repeat: no-repeat; background-size: 60%;`;
-    
+
+    // Preload modal image
+    if (product.imageUrl) {
+        const img = new Image();
+        img.src = product.imageUrl;
+    }
+
     document.getElementById('modal-product-image').style.cssText = imageStyle;
     document.getElementById('modal-product-name').textContent = product.name;
     document.getElementById('modal-product-type').textContent = product.type;
     document.getElementById('modal-product-description').textContent = product.description;
-    
+
     const discount = product.discount || 0;
-    const finalPrice = discount > 0 
+    const finalPrice = discount > 0
         ? (parseFloat(product.price) * (1 - discount / 100)).toFixed(2)
         : parseFloat(product.price).toFixed(2);
-    
+
     if (discount > 0) {
         document.getElementById('modal-product-price').innerHTML = `
             <span style="text-decoration: line-through; color: #999;">€${parseFloat(product.price).toFixed(2)}</span>
@@ -692,14 +715,14 @@ function openProductModal(product) {
     } else {
         document.getElementById('modal-product-price').textContent = `€${finalPrice}`;
     }
-    
+
     const featuresContainer = document.getElementById('modal-product-features');
     featuresContainer.innerHTML = `
         <ul>
             ${features.map(f => `<li>${f}</li>`).join('')}
         </ul>
     `;
-    
+
     const wishlistBtn = document.getElementById('modal-wishlist-btn');
     if (WishlistManager.isInWishlist(product.id)) {
         wishlistBtn.style.background = 'rgba(231, 76, 60, 0.2)';
@@ -708,7 +731,7 @@ function openProductModal(product) {
         wishlistBtn.style.background = '';
         wishlistBtn.style.color = '';
     }
-    
+
     document.getElementById('product-modal').classList.add('show');
 }
 
@@ -1457,6 +1480,12 @@ function createProductCard(product) {
     ? `background-image: url("${imageUrl}"); background-size: cover; background-position: center;`
     : `background: linear-gradient(135deg, ${baseColor}, ${secondaryColor}); background-image: url('shjra-logo.png'); background-blend-mode: overlay; background-position: center; background-repeat: no-repeat; background-size: 60%;`;
 
+  // Preload product image
+  if (imageUrl) {
+    const img = new Image();
+    img.src = imageUrl;
+  }
+
   card.innerHTML = `
     ${badgeHtml}
     <div class="product-image" style="${imageStyle}"></div>
@@ -1776,7 +1805,9 @@ async function uploadFile(event) {
     try {
         const response = await fetch('/api/files/upload', {
             method: 'POST',
-            headers: getAuthHeaders(),
+            headers: token ? {
+                'Authorization': `Bearer ${token}`
+            } : {},
             body: formData
         });
 
@@ -1930,5 +1961,20 @@ document.addEventListener('DOMContentLoaded', () => {
   initFloatingDiscordBtn();
   initParallax();
 
+  // Preload critical images on page load
+  preloadCriticalImages();
+
   // Initialize file upload form - removed since we now use onsubmit
 });
+
+function preloadCriticalImages() {
+  // Preload logo and other critical images
+  const criticalImages = [
+    'shjra-logo.png'
+  ];
+
+  criticalImages.forEach(src => {
+    const img = new Image();
+    img.src = src;
+  });
+}
