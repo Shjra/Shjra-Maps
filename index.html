@@ -241,7 +241,8 @@
                 <div class="staff-tabs">
                     <button class="staff-tab active" onclick="switchStaffTab('prodotti')">📦 Gestisci Prodotti</button>
                     <button class="staff-tab" onclick="switchStaffTab('aggiungi')">➕ Aggiungi Prodotto</button>
-                    <button class="staff-tab" onclick="switchStaffTab('uploads')">📁 Gestisci File</button>
+                    <button class="staff-tab" onclick="switchStaffTab('uploads')">📤 Carica File</button>
+                    <button class="staff-tab" onclick="switchStaffTab('staff-files')">📁 Staff Files</button>
                 </div>
 
                 <!-- Tab Prodotti -->
@@ -308,6 +309,12 @@
                             <li>Supporta file di qualsiasi tipo e dimensione</li>
                         </ul>
                     </div>
+                </div>
+
+                <!-- Tab Staff Files -->
+                <div id="tab-staff-files" class="staff-tab-content" style="display: none;">
+                    <h3>📁 File Caricati</h3>
+                    <div id="staff-files-only-list"></div>
                 </div>
             </div>
         </section>

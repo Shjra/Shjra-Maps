@@ -1022,6 +1022,11 @@ function switchStaffTab(tabName) {
     if (tabName === 'uploads') {
         loadUserFilesForStaff();
     }
+
+    // Load staff files if staff-files tab is selected
+    if (tabName === 'staff-files') {
+        renderStaffFilesOnly();
+    }
 }
 
 function loadStaffProducts() {
@@ -1952,6 +1957,51 @@ async function downloadFile(fileId) {
     } catch (error) {
         showToast('Errore nel download', 'error');
     }
+}
+
+async function renderStaffFilesOnly() {
+    try {
+        const response = await fetch('/api/files/admin/all', {
+            headers: getAuthHeaders()
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            renderStaffFilesOnlyList(data.files);
+        } else {
+            showToast('Errore nel caricamento dei file', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading staff files:', error);
+        showToast('Errore nel caricamento dei file', 'error');
+    }
+}
+
+function renderStaffFilesOnlyList(files) {
+    const staffFilesList = document.getElementById('staff-files-only-list');
+
+    if (files.length === 0) {
+        staffFilesList.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">Nessun file caricato recentemente</p>';
+        return;
+    }
+
+    let filesHtml = '<div style="margin-bottom: 1rem; color: #666; font-size: 0.9rem;">File caricati di recente (accessibili a tutti gli staff)</div>';
+    files.forEach(file => {
+        const userIdsText = file.userIds.join(', ');
+        filesHtml += `
+            <div class="file-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #ddd; margin: 8px 0; border-radius: 8px; background: rgba(255, 255, 255, 0.05);">
+                <div class="file-info" style="flex: 1;">
+                    <span class="file-name" style="font-weight: bold; color: #fff; display: block; margin-bottom: 5px;">${file.filename}</span>
+                    <span class="file-users" style="font-size: 0.8em; color: #ccc; display: block; margin-bottom: 3px;">Utenti: ${userIdsText}</span>
+                    <span class="file-expiry" style="font-size: 0.8em; color: #ccc;">Scade: ${new Date(file.expiresAt).toLocaleString('it-IT')}</span>
+                </div>
+                <button class="btn-download" onclick="downloadFile('${file.id}')" style="background: #667eea; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">📥 Scarica</button>
+            </div>
+        `;
+    });
+
+    staffFilesList.innerHTML = filesHtml;
 }
 
 /* ===== INIT ALL ===== */
