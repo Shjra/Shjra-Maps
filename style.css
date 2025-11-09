@@ -216,7 +216,7 @@ button {
 }
 
 .navbar.morning-theme {
-    background: rgba(255, 250, 240, 0.9);
+    background: transparent;
     border-bottom-color: rgba(255, 200, 100, 0.25);
     box-shadow: 0 4px 30px rgba(255, 200, 100, 0.15);
 }
@@ -376,7 +376,7 @@ button {
 }
 
 .navbar.afternoon-theme {
-    background: rgba(210, 225, 255, 0.85);
+    background: transparent;
     border-bottom-color: rgba(102, 126, 234, 0.25);
     box-shadow: 0 4px 30px rgba(102, 126, 234, 0.15);
 }
