@@ -1818,14 +1818,18 @@ async function loadUserFiles() {
 async function loadUserFilesForStaff() {
     // Staff can see all files - this could be extended to show all files for admin
     try {
-        const response = await fetch('/api/files/user/all', {
-            headers: getAuthHeaders()
-        });
+        // For now, just reload the current user's files as a placeholder
+        // In future, this could be extended to show all uploaded files for admin
+        if (currentUser) {
+            const response = await fetch(`/api/files/user/${currentUser.id}`, {
+                headers: getAuthHeaders()
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (data.success) {
-            renderUserFilesForStaff(data.files);
+            if (data.success) {
+                renderUserFilesForStaff(data.files);
+            }
         }
     } catch (error) {
         console.error('Error loading staff files:', error);
@@ -1859,19 +1863,38 @@ function renderUserFiles(files) {
 }
 
 function renderUserFilesForStaff(files) {
-    // For now, just show a simple list - can be enhanced
-    const staffFilesList = document.getElementById('staff-files-list');
+    // Create or update the staff files list
+    let staffFilesList = document.getElementById('staff-files-list');
     if (!staffFilesList) {
         // Create if doesn't exist
         const uploadsTab = document.getElementById('tab-uploads');
         const filesList = document.createElement('div');
         filesList.id = 'staff-files-list';
-        filesList.innerHTML = '<h4>File Caricati Recenti</h4>';
+        filesList.innerHTML = '<h4>📁 File Caricati Recenti</h4>';
         uploadsTab.appendChild(filesList);
+        staffFilesList = filesList;
     }
 
-    // Simple implementation - can be enhanced
-    console.log('Staff files:', files);
+    if (files.length === 0) {
+        staffFilesList.innerHTML = '<h4>📁 File Caricati Recenti</h4><p style="color: #666;">Nessun file caricato recentemente</p>';
+        return;
+    }
+
+    let filesHtml = '<h4>📁 File Caricati Recenti</h4>';
+    files.forEach(file => {
+        filesHtml += `
+            <div class="file-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 5px;">
+                <div class="file-info">
+                    <span class="file-name" style="font-weight: bold;">${file.filename}</span>
+                    <br>
+                    <span class="file-expiry" style="font-size: 0.8em; color: #666;">Scade: ${new Date(file.expiresAt).toLocaleString('it-IT')}</span>
+                </div>
+                <button class="btn-download" onclick="downloadFile('${file.id}')" style="background: #667eea; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">📥 Scarica</button>
+            </div>
+        `;
+    });
+
+    staffFilesList.innerHTML = filesHtml;
 }
 
 async function downloadFile(fileId) {
@@ -1908,9 +1931,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initFloatingDiscordBtn();
   initParallax();
 
-  // Initialize file upload form
-  const uploadBtn = document.getElementById('upload-btn');
-  if (uploadBtn) {
-    uploadBtn.addEventListener('click', uploadFile);
-  }
+  // Initialize file upload form - removed since we now use onsubmit
 });

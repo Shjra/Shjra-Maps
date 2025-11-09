@@ -257,17 +257,17 @@
                 <!-- Tab Uploads -->
                 <div id="tab-uploads" class="staff-tab-content">
                     <h3>📤 Caricamento File</h3>
-                    <div class="upload-form">
+                    <form class="upload-form" onsubmit="uploadFile(event)">
                         <div class="form-group">
                             <label for="file-input">Seleziona File:</label>
-                            <input type="file" id="file-input" required>
+                            <input type="file" id="file-input" name="file" required>
                         </div>
                         <div class="form-group">
                             <label for="user-ids-input">ID Utenti (separati da virgola):</label>
-                            <textarea id="user-ids-input" placeholder="123456789012345678, 987654321098765432" rows="3" required></textarea>
+                            <textarea id="user-ids-input" name="userIds" placeholder="123456789012345678, 987654321098765432" rows="3" required></textarea>
                         </div>
                         <button type="submit" class="btn-upload" id="upload-btn">📤 Carica File</button>
-                    </div>
+                    </form>
                     <div class="upload-info">
                         <h4>ℹ️ Informazioni</h4>
                         <ul>
