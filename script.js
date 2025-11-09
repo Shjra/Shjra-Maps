@@ -360,6 +360,11 @@ function toggleProfileModal() {
     const modal = document.getElementById('profile-modal');
     const isVisible = modal.style.display === 'block';
     modal.style.display = isVisible ? 'none' : 'block';
+
+    // Load user files when opening the profile modal
+    if (!isVisible && isLoggedIn && currentUser) {
+        loadUserFiles();
+    }
 }
 
 function openTermsModal() {
