@@ -812,6 +812,30 @@ app.get('/api/files/user/:userId', verifyToken, async (req, res) => {
   }
 });
 
+app.get('/api/files/admin/all', checkAdmin, async (req, res) => {
+  try {
+    const userFilesCollection = db.collection('userFiles');
+
+    const files = await userFilesCollection.find({
+      expiresAt: { $gt: new Date() }
+    }).sort({ uploadTime: -1 }).toArray();
+
+    res.json({
+      success: true,
+      files: files.map(file => ({
+        id: file.id,
+        filename: file.originalName,
+        userIds: file.userIds,
+        uploadTime: file.uploadTime,
+        expiresAt: file.expiresAt,
+        uploadedBy: file.uploadedBy
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to fetch files' });
+  }
+});
+
 app.get('/api/files/download/:fileId', verifyToken, async (req, res) => {
   try {
     const fileId = req.params.fileId;

@@ -1816,20 +1816,16 @@ async function loadUserFiles() {
 }
 
 async function loadUserFilesForStaff() {
-    // Staff can see all files - this could be extended to show all files for admin
+    // Staff can see all uploaded files
     try {
-        // For now, just reload the current user's files as a placeholder
-        // In future, this could be extended to show all uploaded files for admin
-        if (currentUser) {
-            const response = await fetch(`/api/files/user/${currentUser.id}`, {
-                headers: getAuthHeaders()
-            });
+        const response = await fetch('/api/files/admin/all', {
+            headers: getAuthHeaders()
+        });
 
-            const data = await response.json();
+        const data = await response.json();
 
-            if (data.success) {
-                renderUserFilesForStaff(data.files);
-            }
+        if (data.success) {
+            renderUserFilesForStaff(data.files);
         }
     } catch (error) {
         console.error('Error loading staff files:', error);
@@ -1882,10 +1878,13 @@ function renderUserFilesForStaff(files) {
 
     let filesHtml = '<h4>📁 File Caricati Recenti</h4>';
     files.forEach(file => {
+        const userIdsText = file.userIds.join(', ');
         filesHtml += `
             <div class="file-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 5px;">
                 <div class="file-info">
                     <span class="file-name" style="font-weight: bold;">${file.filename}</span>
+                    <br>
+                    <span class="file-users" style="font-size: 0.8em; color: #666;">Utenti: ${userIdsText}</span>
                     <br>
                     <span class="file-expiry" style="font-size: 0.8em; color: #666;">Scade: ${new Date(file.expiresAt).toLocaleString('it-IT')}</span>
                 </div>
