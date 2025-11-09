@@ -253,30 +253,6 @@
                 <!-- Tab Aggiungi -->
                 <div id="tab-aggiungi" class="staff-tab-content" style="display: none;">
                     <h3>Aggiungi Nuovo Prodotto</h3>
-
-                <!-- Tab Uploads -->
-                <div id="tab-uploads" class="staff-tab-content">
-                    <h3>📤 Caricamento File</h3>
-                    <form class="upload-form" onsubmit="uploadFile(event)">
-                        <div class="form-group">
-                            <label for="file-input">Seleziona File:</label>
-                            <input type="file" id="file-input" name="file" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="user-ids-input">ID Utenti (separati da virgola):</label>
-                            <textarea id="user-ids-input" name="userIds" placeholder="123456789012345678, 987654321098765432" rows="3" required></textarea>
-                        </div>
-                        <button type="submit" class="btn-upload" id="upload-btn">📤 Carica File</button>
-                    </form>
-                    <div class="upload-info">
-                        <h4>ℹ️ Informazioni</h4>
-                        <ul>
-                            <li>I file verranno automaticamente eliminati dopo 7 giorni</li>
-                            <li>Gli utenti riceveranno una notifica con il link per il download</li>
-                            <li>Supporta file di qualsiasi tipo e dimensione</li>
-                        </ul>
-                    </div>
-                </div>
                     <form class="product-form" onsubmit="addProduct(event)">
                         <div class="form-group">
                             <label>Nome Prodotto</label>
@@ -308,6 +284,30 @@
                         </div>
                         <button type="submit" class="btn-save">Aggiungi Prodotto</button>
                     </form>
+                </div>
+
+                <!-- Tab Uploads -->
+                <div id="tab-uploads" class="staff-tab-content" style="display: none;">
+                    <h3>📤 Caricamento File</h3>
+                    <form class="upload-form" onsubmit="uploadFile(event)">
+                        <div class="form-group">
+                            <label for="file-input">Seleziona File:</label>
+                            <input type="file" id="file-input" name="file" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-ids-input">ID Utenti (separati da virgola):</label>
+                            <textarea id="user-ids-input" name="userIds" placeholder="123456789012345678, 987654321098765432" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-upload" id="upload-btn">📤 Carica File</button>
+                    </form>
+                    <div class="upload-info">
+                        <h4>ℹ️ Informazioni</h4>
+                        <ul>
+                            <li>I file verranno automaticamente eliminati dopo 7 giorni</li>
+                            <li>Gli utenti riceveranno una notifica con il link per il download</li>
+                            <li>Supporta file di qualsiasi tipo e dimensione</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
